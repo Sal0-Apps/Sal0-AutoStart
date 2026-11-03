@@ -1,0 +1,14 @@
+.git
+.github
+__pycache__
+**/__pycache__
+*.pyc
+.venv
+.env
+config
+data
+preview
+.openai
+docs
+tests
+README.md

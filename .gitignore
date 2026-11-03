@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+config/
+data/
+preview/
+.openai/
+.pytest_cache/
+*.log
+*.tmp
+.frontend-check.js

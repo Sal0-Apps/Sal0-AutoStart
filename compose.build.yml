@@ -1,0 +1,5 @@
+services:
+  auto-iniciar-containers:
+    build:
+      context: .
+    image: sal0-autostart:local

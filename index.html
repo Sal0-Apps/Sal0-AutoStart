@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Sal0 AutoStart</title>
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<style>
+:root{--bg:#101418;--panel:#191e24;--panel2:#20262d;--field:#14191f;--line:#2b333d;--text:#edf2f7;--muted:#9ca9b8;--faint:#748292;--accent:#92dfc4;--accent-soft:#203c34;--blue:#a6c5f5;--warn:#efc484;--danger:#f0a1a9;--shadow:0 16px 40px #00000018;--radius:15px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:dark}
+:root[data-theme=light]{--bg:#f3f5f7;--panel:#fff;--panel2:#f6f8fa;--field:#f6f8fa;--line:#e0e5ea;--text:#1e2b38;--muted:#5c6c7c;--faint:#728194;--accent:#177958;--accent-soft:#e5f4ed;--blue:#3d6eae;--warn:#97631c;--danger:#b33a50;--shadow:0 8px 30px #21374806;color-scheme:light}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}button,input,select{font:inherit}button,a,input,select{-webkit-tap-highlight-color:transparent}button{cursor:pointer}button:disabled{opacity:.55;cursor:wait}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--blue);outline-offset:3px}[hidden]{display:none!important}svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}button{color:inherit}h1,h2,h3,p{margin:0}h1{font-size:31px;line-height:1.22;letter-spacing:-1.1px;font-weight:660}h2{font-size:17px;letter-spacing:-.25px}h3{font-size:15px}small{font-size:12px}.muted{color:var(--muted)}.shell{display:grid;grid-template-columns:224px minmax(0,1fr);min-height:100vh}.sidebar{border-right:1px solid var(--line);padding:31px 20px 22px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;background:var(--bg)}.brand{display:flex;gap:11px;align-items:center;padding:0 9px 31px}.logo{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:var(--accent);color:var(--bg);font-weight:800}.logo svg{width:23px;height:23px;stroke-width:1.9}.brand-name{font-size:20px;letter-spacing:-.6px;font-weight:700}.brand-sub{font-size:10px;color:var(--faint);letter-spacing:1.3px;text-transform:uppercase}.nav-title{font-size:10px;letter-spacing:1.3px;color:var(--faint);padding:0 12px 10px}.nav{display:flex;flex-direction:column;gap:5px}.nav button{border:0;background:transparent;color:var(--muted);padding:12px;display:flex;align-items:center;gap:12px;border-radius:9px;text-align:left;font-weight:550}.nav button.active{background:var(--panel2);color:var(--text)}.nav button.active svg{color:var(--accent)}.nav button:hover{background:var(--panel2)}.nav .nav-count{margin-left:auto;font-size:11px;border:1px solid var(--line);border-radius:5px;min-width:23px;text-align:center;padding:1px 4px}.side-bottom{margin-top:auto;padding:24px 9px 0}.server-box{display:flex;gap:10px;align-items:center}.server-icon{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line);border-radius:10px}.server-name{font-size:12px;font-weight:600}.side-foot{font-size:11px;color:var(--faint);margin-top:17px}.main{min-width:0;padding:30px 42px 40px;max-width:1600px;width:100%;margin:0 auto}.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:35px;gap:12px}.crumb{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px}.crumb strong{font-weight:500;color:var(--text)}.top-actions{display:flex;align-items:center;gap:10px}.connection{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:7px;margin-right:6px}.dot{width:6px;height:6px;border-radius:100%;background:var(--accent);display:inline-block;flex-shrink:0}.dot.offline{background:var(--danger)}.icon-button{width:34px;height:34px;border:1px solid var(--line);background:var(--panel);border-radius:9px;display:grid;place-items:center;color:var(--muted)}.icon-button:hover{color:var(--text);border-color:var(--muted)}.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:25px}.eyebrow{font-size:10px;color:var(--accent);font-weight:650;letter-spacing:1.45px;margin-bottom:9px}.subtitle{color:var(--muted);font-size:13px;max-width:680px;margin-top:10px}.version{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--faint);font-size:11px;border:1px solid var(--line);padding:4px 8px;border-radius:6px;white-space:nowrap}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:20px}.stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:19px 20px;box-shadow:var(--shadow)}.stat-top{display:flex;align-items:center;justify-content:space-between;gap:7px;color:var(--muted);font-size:11px}.stat-top svg{width:16px;height:16px;color:var(--faint)}.stat-value{font-size:30px;line-height:1.2;letter-spacing:-1.1px;margin:11px 0 5px;font-weight:620;font-variant-numeric:tabular-nums}.stat-foot{font-size:10px;color:var(--faint)}.stat.accent .stat-value{color:var(--accent)}.stat.warning .stat-value{color:var(--warn)}.monitor-strip{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);padding:16px 19px;display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:28px}.monitor-info{display:flex;align-items:center;gap:13px;min-width:0}.monitor-symbol{width:37px;height:37px;border-radius:11px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);flex-shrink:0}.monitor-title{font-weight:600;font-size:12px;display:flex;align-items:center;gap:8px}.monitor-detail{font-size:11px;color:var(--muted);margin-top:3px}.monitor-buttons{display:flex;gap:8px;align-items:center}.button{border:1px solid var(--line);background:var(--panel2);border-radius:8px;min-height:36px;padding:8px 12px;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-weight:550;font-size:11px;text-decoration:none}.button:hover{border-color:var(--faint)}.button.primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}.button svg{width:15px;height:15px}.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}.section-head p{font-size:11px;color:var(--faint);margin-top:3px}.legend{display:flex;gap:7px;align-items:center;font-size:10px;color:var(--muted);white-space:nowrap}.legend .mini-switch{width:23px;height:13px;border-radius:10px;background:var(--accent);position:relative}.mini-switch:after{content:"";position:absolute;width:9px;height:9px;border-radius:100%;background:var(--bg);right:2px;top:2px}.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:15px}.search{position:relative;flex:1}.search svg{position:absolute;left:13px;top:12px;color:var(--faint);width:16px;height:16px}.search input,select,.form-input{width:100%;border:1px solid var(--line);border-radius:8px;background:var(--field);color:var(--text);min-height:40px;font-size:12px;padding:9px 12px}.search input{padding-left:39px}.search input::placeholder{color:var(--faint)}.toolbar select{width:165px;flex-shrink:0}.stack-list{display:grid;gap:12px}.stack{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}.stack-head{padding:15px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:69px}.stack-left{display:flex;align-items:center;gap:10px;min-width:0}.fold-button{display:flex;gap:10px;align-items:center;background:transparent;border:0;padding:2px 0;text-align:left;min-width:0}.fold-button .chevron{color:var(--faint);width:15px;height:15px;transition:transform .15s}.fold-button .chevron.collapsed{transform:rotate(-90deg)}.stack-icon{background:var(--panel2);border:1px solid var(--line);border-radius:9px;width:33px;height:33px;display:grid;place-items:center;color:var(--blue);flex-shrink:0}.stack-title{display:flex;gap:8px;align-items:center;min-width:0}.stack-title strong{font-size:13px;font-weight:600;overflow-wrap:anywhere}.count-badge{font-size:10px;border:1px solid var(--line);border-radius:5px;padding:0 5px;color:var(--faint)}.stack-meta{font-size:10px;color:var(--faint);margin-top:3px}.stack-control{display:flex;align-items:center;gap:10px;flex-shrink:0}.stack-control>span{font-size:10px;color:var(--muted)}.switch{position:relative;display:inline-flex;align-items:center;min-width:36px;min-height:24px;cursor:pointer}.switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:1}.switch-track{width:33px;height:19px;border-radius:15px;background:var(--line);border:1px solid transparent;transition:background .16s;display:block}.switch-track:after{content:"";position:absolute;width:13px;height:13px;border-radius:100%;background:var(--muted);top:5.5px;left:3px;transition:transform .16s,background .16s}.switch input:checked+.switch-track{background:var(--accent)}.switch input:checked+.switch-track:after{transform:translateX(14px);background:var(--bg)}.switch input:indeterminate+.switch-track{background:var(--accent-soft);border-color:var(--accent)}.switch input:indeterminate+.switch-track:after{background:var(--accent);width:12px;height:3px;border-radius:1px;top:10.5px;left:10px;transform:none}.switch input:focus-visible+.switch-track{outline:3px solid var(--blue);outline-offset:3px}.switch input:disabled{cursor:default}.switch:has(input:disabled){opacity:.45;cursor:default}.container-row{display:grid;grid-template-columns:minmax(150px,1.25fr) minmax(120px,1fr) minmax(115px,.65fr);gap:14px;align-items:center;padding:14px 19px 14px 46px;border-top:1px solid var(--line)}.container-id{min-width:0;display:flex;gap:10px;align-items:center}.app-icon{width:30px;height:32px;border:1px solid var(--line);background:var(--field);color:var(--muted);border-radius:7px;display:grid;place-items:center;flex-shrink:0;font-size:11px;font-weight:650}.container-name{font-weight:550;font-size:12px;overflow-wrap:anywhere}.image{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:9px;color:var(--faint);max-width:330px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}.runtime{display:flex;gap:6px;align-items:center;font-size:10px;color:var(--muted)}.runtime .dot{width:5px;height:5px}.runtime.running{color:var(--accent)}.runtime.exited .dot,.runtime.created .dot,.runtime.dead .dot{background:var(--faint)}.runtime.restarting,.runtime.paused{color:var(--warn)}.runtime.restarting .dot,.runtime.paused .dot{background:var(--warn)}.row-reason{font-size:10px;color:var(--faint);margin-top:4px;line-height:1.4;max-width:360px;overflow-wrap:anywhere}.row-reason.warning{color:var(--warn)}.container-policy{display:flex;align-items:center;justify-content:flex-end;gap:10px}.policy-copy{font-size:10px;color:var(--muted);text-align:right}.policy-copy.enabled{color:var(--accent)}.policy-copy small{font-size:9px;display:block;color:var(--faint);font-weight:400}.row-details{grid-column:1/-1;color:var(--faint);font-size:10px;padding-left:40px;display:flex;gap:16px;flex-wrap:wrap}.details-button{border:0;background:none;color:var(--faint);font-size:10px;padding:0;text-decoration:underline;text-underline-offset:3px}.details-button:hover{color:var(--text)}.note{display:flex;gap:9px;align-items:flex-start;color:var(--faint);font-size:11px;line-height:1.6;margin-top:17px;padding:0 2px}.note svg{width:15px;height:15px;margin-top:2px}.footer{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--faint);font-size:10px;margin-top:31px;padding-top:18px;border-top:1px solid var(--line)}.footer strong{color:var(--muted);font-weight:500}.error-banner{border:1px solid var(--danger);color:var(--danger);background:var(--panel);border-radius:10px;padding:12px 15px;margin-bottom:18px;font-size:12px;overflow-wrap:anywhere}.empty{padding:44px 20px;border:1px dashed var(--line);border-radius:var(--radius);text-align:center;color:var(--muted);background:var(--panel)}.empty svg{width:30px;height:30px;color:var(--faint);margin-bottom:8px}.empty h3{margin-bottom:5px;color:var(--text)}.empty p{font-size:12px}.settings-card{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);max-width:850px;padding:24px;margin-bottom:18px}.settings-card h2{margin-bottom:6px}.settings-card>p{font-size:12px;color:var(--muted);margin-bottom:21px}.settings-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:15px 0;border-top:1px solid var(--line)}.settings-row h3{font-size:12px;font-weight:550}.settings-row p{font-size:11px;color:var(--muted);margin-top:4px;max-width:570px}.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:17px;margin-top:22px}.field-label{font-size:11px;color:var(--muted);display:block;margin-bottom:6px}.field-help{display:block;color:var(--faint);font-size:10px;margin-top:5px}.settings-save{margin-top:24px;display:flex;align-items:center;gap:15px}.settings-save .button{font-size:12px;min-height:39px;padding:9px 18px}.event-list{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--panel)}.event{display:grid;grid-template-columns:100px 1fr;gap:20px;padding:17px 21px;border-bottom:1px solid var(--line)}.event:last-child{border:0}.event-time{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--faint);font-size:10px;white-space:nowrap}.event-body{display:flex;align-items:flex-start;gap:10px;min-width:0;font-size:12px;overflow-wrap:anywhere}.event-body .dot{margin-top:6px}.event.warning .dot{background:var(--warn)}.event.error .dot{background:var(--danger)}.toast{position:fixed;bottom:23px;left:50%;transform:translateX(-50%);z-index:10;background:var(--text);color:var(--bg);padding:11px 18px;border-radius:10px;box-shadow:var(--shadow);font-size:12px;max-width:calc(100vw - 30px);width:max-content}.toast.error{background:var(--danger);color:var(--bg)}.auth{min-height:100vh;display:grid;place-items:center;padding:25px;background:radial-gradient(ellipse at 50% 25%,var(--accent-soft),transparent 60%)}.auth-card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:32px;max-width:410px;width:100%;box-shadow:var(--shadow)}.auth-brand{display:flex;align-items:center;gap:10px;margin-bottom:31px;font-weight:650;font-size:20px;letter-spacing:-.4px}.auth h1{font-size:24px;letter-spacing:-.6px}.auth p{color:var(--muted);font-size:12px;margin:10px 0 25px}.auth .form-input{height:43px;margin-bottom:15px}.auth .button{width:100%;min-height:42px;font-size:12px;margin-top:7px}.auth-foot{color:var(--faint);font-size:10px;text-align:center;margin-top:24px}.auth-error{color:var(--danger);font-size:11px;min-height:17px;margin:1px 0 8px}.skeleton{height:115px;border:1px solid var(--line);background:var(--panel);border-radius:15px;margin:12px 0;opacity:.6}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.spin{animation:spin 1.2s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){*,*:after{animation:none!important;transition:none!important}}
+@media(min-width:1450px){.main{padding:35px 58px}.container-row{grid-template-columns:minmax(200px,1.25fr) minmax(180px,1fr) minmax(140px,.6fr)}}
+@media(max-width:1100px){.shell{grid-template-columns:190px minmax(0,1fr)}.sidebar{padding:26px 12px 18px}.main{padding:27px 27px}.container-row{grid-template-columns:minmax(130px,1fr) minmax(110px,1fr) 95px;padding-left:26px}.stack-control>span{display:none}.stat{padding:16px}.stat-top{font-size:10px}.stat-top svg{display:none}.row-details{padding-left:0}.monitor-strip{align-items:flex-start}.monitor-buttons{flex-direction:column-reverse}.monitor-buttons .button{width:100%;min-height:30px;padding:5px 10px}}
+@media(max-width:760px){.shell{display:block}.sidebar{position:static;height:auto;padding:17px 20px 0;border-right:0;border-bottom:1px solid var(--line);background:var(--panel)}.brand{padding:0 0 17px;gap:9px}.brand .logo{width:30px;height:30px;border-radius:9px}.brand-name{font-size:18px}.brand-sub{display:none}.nav-title,.side-bottom{display:none}.nav{flex-direction:row;gap:7px}.nav button{font-size:11px;padding:11px 12px;border-radius:8px 8px 0 0;gap:8px}.nav button svg{width:16px;height:16px}.nav .nav-count{font-size:9px}.nav button.active{background:var(--bg);box-shadow:inset 0 -2px var(--accent)}.main{padding:20px 19px 28px}.topbar{margin-bottom:25px}.connection{font-size:10px}.crumb{font-size:10px}.crumb svg{width:13px}.top-actions{gap:7px}.icon-button{width:30px;height:30px}.icon-button svg{width:15px}h1{font-size:26px;letter-spacing:-.8px}.eyebrow{font-size:9px}.page-head{align-items:flex-start;margin-bottom:20px}.page-head .version{margin-top:2px;font-size:9px}.subtitle{font-size:12px}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}.stat{padding:14px 16px}.stat-value{font-size:28px;margin:9px 0 3px}.stat-foot{font-size:9px}.stat-top svg{display:block;width:14px}.monitor-strip{padding:14px;display:block;margin-bottom:24px}.monitor-symbol{width:33px;height:33px}.monitor-buttons{flex-direction:row;justify-content:flex-start;margin:13px 0 0 45px}.monitor-buttons .button{width:auto}.monitor-title{font-size:12px}.monitor-detail{font-size:10px}.section-head h2{font-size:15px}.section-head p{font-size:10px}.legend{display:none}.toolbar{gap:8px}.toolbar select{width:132px;font-size:11px}.search input{font-size:11px;min-width:0}.stack-head{padding:13px}.stack-icon{width:30px;height:30px;border-radius:8px}.stack-left{gap:6px}.fold-button{gap:7px}.stack-title strong{font-size:12px}.stack-meta{font-size:9px}.stack-control{gap:4px}.container-row{grid-template-columns:minmax(0,1fr) 95px;padding:14px 13px 14px 22px;gap:8px 12px}.container-id{gap:8px}.container-name{font-size:11px}.app-icon{width:26px;height:28px;font-size:10px}.image{font-size:8px;max-width:210px}.container-state{grid-column:1;grid-row:2;padding-left:34px}.container-policy{grid-column:2;grid-row:1/3;gap:7px}.policy-copy{font-size:9px}.policy-copy small{font-size:8px}.runtime{font-size:9px}.row-reason{font-size:9px;line-height:1.5;max-width:none}.row-details{font-size:9px;gap:7px;grid-row:3;padding-left:34px}.note{font-size:10px;margin-top:15px}.footer{font-size:9px;margin-top:24px;align-items:flex-start}.settings-card{padding:19px}.settings-grid{grid-template-columns:1fr;gap:15px}.settings-row{gap:16px}.event{grid-template-columns:66px 1fr;gap:13px;padding:15px}.event-time{font-size:9px;white-space:normal}.event-body{font-size:11px}.auth-card{padding:28px 25px}.settings-save{align-items:flex-start;flex-direction:column;gap:8px}.settings-save .button{width:100%}}
+@media(max-width:760px){.switch{min-height:40px;min-width:40px}.switch-track:after{top:13.5px}.switch input:indeterminate+.switch-track:after{top:18.5px}.container-name{font-size:12px}.runtime,.row-reason{font-size:10px}.policy-copy{font-size:10px}.policy-copy small{font-size:9px}.nav button{white-space:nowrap}.row-details{font-size:10px}}
+@media(max-width:420px){.nav button svg{display:none}.nav button{padding:11px 12px;font-size:12px}.nav .nav-count{margin-left:3px}}
+@media(max-width:360px){.main{padding:17px 13px}.sidebar{padding:15px 13px 0}.nav button{padding:10px 9px;font-size:11px}.toolbar select{width:112px}.container-row{padding-left:14px}.policy-copy small{display:none}.brand-name{font-size:17px}.connection{display:none}}
+
+/* Identidade visual compartilhada com Sal0 Voz e Sal0 Karaokê. */
+:root{--bg:#050b12;--panel:rgba(8,20,31,.96);--panel2:#0c2336;--field:rgba(2,10,18,.72);--text:#eef8ff;--muted:#91adc0;--faint:#7696ad;--line:rgba(73,174,239,.2);--accent:#49aeef;--accent-soft:rgba(73,174,239,.09);--blue:#49aeef;--button:#1976b9;--success:#4cc89a;--warn:#e3b67d;--danger:#f0a7a7;--shadow:0 18px 48px rgba(0,5,12,.25);--radius:16px}
+:root[data-theme=light]{--bg:#edf7fd;--panel:#fff;--panel2:#f1f5f9;--field:#f8fafc;--text:#0f172a;--muted:#586a80;--faint:#647b90;--line:#cddcea;--accent:#168bd2;--accent-soft:rgba(22,139,210,.07);--blue:#168bd2;--button:#0b70ac;--success:#197c5d;--warn:#97631c;--danger:#a43347;--shadow:0 10px 25px #00000009}
+body{background:radial-gradient(circle at 50% -20%,#49aeef21,transparent 42%),var(--bg);background-repeat:no-repeat;font-size:15px;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.shell{display:block;min-height:0;width:min(1100px,calc(100% - 32px));margin:24px auto 0}.app-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 20px;margin-bottom:16px;border:1px solid var(--line);border-radius:16px;background:var(--panel);box-shadow:var(--shadow)}.brand{padding:0;gap:11px}.brand-name{font-size:22px;letter-spacing:-.5px}.brand-sub{font-size:10px;letter-spacing:.7px;margin-top:2px}.logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--button));color:#fff;box-shadow:0 0 20px #49aeef19}.header-actions{display:flex;align-items:center;gap:7px}.connection{font-size:12px;margin-right:9px}.icon-button{width:44px;height:44px;min-height:44px;border-radius:10px;background:var(--field)}.dot{background:var(--success)}.nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:6px;margin-bottom:22px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.nav button{justify-content:center;gap:9px;min-height:44px;padding:10px 12px;border-radius:9px;color:var(--muted);font-size:14px;white-space:nowrap}.nav button.active,.nav button.active:hover{background:linear-gradient(135deg,var(--blue),var(--button));color:#fff;box-shadow:none}.nav button.active svg{color:#fff}.nav .nav-count{margin-left:0;font-size:10px;color:inherit;border-color:currentColor;opacity:.8}.main{padding:0;max-width:none;margin:0;width:100%}.topbar{margin-bottom:18px}.crumb{font-size:12px}.version{font-size:11px}.eyebrow{font-size:10px;letter-spacing:1.1px;margin-bottom:7px}h1{font-size:24px;letter-spacing:-.5px;line-height:1.3}h2{font-size:17px}.subtitle{font-size:13px;line-height:1.6}.page-head{margin-bottom:20px}.stats{gap:12px}.stat{padding:17px 18px;background:linear-gradient(135deg,#49aeef06,transparent 70%),var(--panel)}.stat-top{font-size:12px}.stat-top svg{display:block;width:17px;height:17px}.stat-value{font-size:28px}.stat-foot{font-size:11px}.monitor-strip{display:flex;align-items:center;padding:18px 20px;margin-bottom:24px}.monitor-title{font-size:13px}.monitor-detail{font-size:12px}.monitor-buttons{flex-direction:row;margin:0}.monitor-buttons .button{width:auto;min-height:44px;padding:10px 13px;font-size:12px}.button{min-height:44px;border-radius:10px;font-size:12px}.button.primary{background:linear-gradient(135deg,var(--blue),var(--button));color:#fff;border-color:transparent}.button.primary:hover{filter:brightness(1.08)}.search input,select,.form-input{min-height:44px;font-size:13px;border-radius:10px}.search svg{top:14px}.toolbar select{width:185px;font-size:12px}.stack-head{padding:15px 18px}.stack-title strong{font-size:14px}.stack-meta{font-size:11px}.stack-control>span{display:inline;font-size:11px}.container-row{padding:15px 19px 15px 44px;grid-template-columns:minmax(180px,1.2fr) minmax(160px,1fr) minmax(120px,.65fr)}.container-name{font-size:13px}.image{font-size:10px}.app-icon{background:var(--accent-soft);color:var(--blue)}.runtime,.row-reason{font-size:11px}.runtime.running{color:var(--success)}.runtime.running .dot{background:var(--success)}.policy-copy{font-size:12px}.policy-copy small{font-size:10px}.switch{min-width:44px;min-height:44px}.switch-track:after{top:15.5px}.switch input:checked+.switch-track:after{background:#eef8ff}.switch input:indeterminate+.switch-track:after{top:20.5px}.note{font-size:12px}.section-head p{font-size:12px}.footer{font-size:11px;padding-bottom:28px}.settings-card{max-width:none}.settings-row h3{font-size:14px}.settings-row p,.settings-card>p{font-size:13px}.field-label{font-size:13px}.field-help{font-size:11px}.settings-grid{gap:20px}.settings-save .button{min-height:44px;font-size:13px}.auth-card{border-radius:16px;background:var(--panel)}.auth h1{font-size:24px}.auth p{font-size:13px}.auth .button{min-height:46px;font-size:14px}.auth .form-input{min-height:46px}.event-body{font-size:13px}.event-time{font-size:11px}.auth-brand{letter-spacing:-.4px}.row-details{font-size:11px}
+@media(max-width:900px){.container-row{grid-template-columns:minmax(150px,1.1fr) minmax(140px,1fr) 110px;padding-left:22px}.monitor-buttons{gap:6px}.monitor-buttons .button{padding:9px 10px;font-size:11px}.stat{padding:15px}.stat-top{font-size:11px}}
+@media(max-width:760px){.shell{width:calc(100% - 24px);margin-top:12px}.app-header{padding:13px 14px;gap:10px;margin-bottom:12px}.brand-name{font-size:19px}.brand-sub{font-size:9px}.header-actions{gap:5px}.header-actions .connection{display:none}.header-actions .icon-button{width:40px;height:40px;min-height:40px}.brand{gap:9px}.nav{gap:4px;margin-bottom:18px}.nav button{padding:10px 6px;font-size:12px;min-height:44px}.nav .nav-count{display:none}.main{padding:0}.topbar{margin-bottom:17px}h1{font-size:22px}.stats{gap:9px}.stat{padding:14px}.stat-top{font-size:11px}.stat-value{font-size:26px}.stat-foot{font-size:10px}.monitor-strip{display:block;padding:15px}.monitor-buttons{margin:13px 0 0 0;display:flex;flex-direction:row}.monitor-buttons .button{width:auto;min-height:42px;padding:9px 13px;font-size:12px}.monitor-title{font-size:13px}.monitor-detail{font-size:11px}.toolbar select{width:134px;font-size:11px}.search input{font-size:12px}.container-row{grid-template-columns:minmax(0,1fr) 102px;padding:14px;gap:8px}.container-state{padding-left:35px}.container-name{font-size:12px}.image{font-size:9px}.runtime,.row-reason{font-size:11px}.policy-copy{font-size:11px}.policy-copy small{font-size:9px}.stack-head{padding:13px}.stack-title strong{font-size:13px}.stack-meta{font-size:10px}.stack-control>span{display:none}.switch{min-width:44px;min-height:44px}.switch-track:after{top:15.5px}.switch input:indeterminate+.switch-track:after{top:20.5px}.row-details{font-size:10px}.settings-card{padding:19px}.settings-row h3{font-size:13px}.settings-row p{font-size:12px}.footer{font-size:10px}.note{font-size:11px}}
+@media(max-width:420px){.nav button svg{display:none}.nav button{font-size:12px}.logo{width:34px;height:34px}.brand-name{font-size:18px}}
+</style>
+</head>
+<body>
+<div id="auth" class="auth">
+  <form id="auth-form" class="auth-card">
+    <div class="auth-brand"><span class="logo"><svg viewBox="0 0 24 24"><path d="M12 3v8m-5-6a8 8 0 1 0 10 0"/></svg></span>Sal0 AutoStart</div>
+    <h1 id="auth-title">Conectando ao painel…</h1>
+    <p id="auth-description">Carregando as informações do seu servidor.</p>
+    <div id="auth-fields" hidden>
+      <label class="field-label" for="password">Senha do painel</label>
+      <input class="form-input" id="password" type="password" required minlength="8" maxlength="256" autocomplete="current-password">
+      <div id="confirm-wrap" hidden><label class="field-label" for="confirm-password">Confirme a senha</label><input class="form-input" id="confirm-password" type="password" minlength="8" maxlength="256" autocomplete="new-password"></div>
+      <div id="auth-error" class="auth-error" role="alert"></div>
+      <button class="button primary" id="auth-submit" type="submit">Entrar</button>
+    </div>
+    <div class="auth-foot">Sal0 Apps · Recuperação automática</div>
+  </form>
+</div>
+<div class="shell" id="app" hidden>
+  <header class="app-header">
+    <div class="brand"><span class="logo"><svg viewBox="0 0 24 24"><path d="M12 3v8m-5-6a8 8 0 1 0 10 0"/></svg></span><div><div class="brand-name">Sal0 AutoStart</div><div class="brand-sub">Sal0 Apps · Docker</div></div></div>
+    <div class="header-actions"><span id="connection" class="connection"><span class="dot"></span>Conectado</span><button id="theme" class="icon-button" aria-label="Alternar tema" title="Alternar tema"></button><button id="logout" class="icon-button" aria-label="Sair do painel" title="Sair do painel"><svg viewBox="0 0 24 24"><path d="M10 4H5v16h5m4-12 4 4-4 4m-5-4h11"/></svg></button></div>
+  </header>
+  <nav class="nav" aria-label="Navegação principal">
+    <button type="button" data-view="overview" class="active"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Contêineres<span id="nav-count" class="nav-count">—</span></button>
+    <button type="button" data-view="activity"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Atividade</button>
+    <button type="button" data-view="settings"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="8" cy="7" r="3" fill="var(--panel)"/><circle cx="16" cy="17" r="3" fill="var(--panel)"/></svg>Configurações</button>
+  </nav>
+  <main class="main">
+    <div class="topbar"><div class="crumb"><span data-server-name>Servidor Docker</span><span>/</span><strong id="breadcrumb">Contêineres</strong></div><span class="version" id="app-version">v2.1.0</span></div>
+    <div id="error-banner" class="error-banner" role="alert" hidden></div>
+    <section id="overview-view">
+      <div class="page-head"><div><p class="eyebrow">RECUPERAÇÃO AUTOMÁTICA</p><h1>Recuperação de contêineres</h1><p class="subtitle">Escolha quais serviços devem voltar ao ar quando o armazenamento estiver disponível.</p></div></div>
+      <div id="stats" class="stats"></div>
+      <div id="monitor-strip" class="monitor-strip"></div>
+      <div class="section-head"><div><h2>Stacks e contêineres</h2><p id="inventory-meta">Descobrindo os serviços do servidor…</p></div><span class="legend"><span class="mini-switch"></span>Recuperação automática</span></div>
+      <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><label class="sr-only" for="search">Buscar contêiner ou stack</label><input id="search" type="search" placeholder="Buscar contêiner ou stack…" autocomplete="off"></div><label class="sr-only" for="filter">Filtrar contêineres</label><select id="filter"><option value="all">Todos os contêineres</option><option value="enabled">Com recuperação</option><option value="disabled">Sem recuperação</option><option value="stopped">Parados</option><option value="waiting">Aguardando disco</option><option value="running">Em execução</option></select></div>
+      <div id="stack-list" class="stack-list"><div class="skeleton"></div><div class="skeleton"></div></div>
+      <p class="note"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-9h.01"/></svg><span>As escolhas são salvas automaticamente. Desativar a recuperação deixa o contêiner no estado atual e apenas impede que este monitor tente iniciá-lo.</span></p>
+    </section>
+    <section id="activity-view" hidden><div class="page-head"><div><p class="eyebrow">ACOMPANHAMENTO</p><h1>Atividade do monitor</h1><p class="subtitle">Tentativas de início, espera pelo disco e alterações de configuração desta execução.</p></div></div><div id="event-list" class="event-list"></div></section>
+    <section id="settings-view" hidden>
+      <div class="page-head"><div><p class="eyebrow">PREFERÊNCIAS</p><h1>Do seu jeito.</h1><p class="subtitle">Ajuste como o monitor encontra e recupera seus serviços.</p></div></div>
+      <form id="settings-form" class="settings-card"><h2>Comportamento da recuperação</h2><p>As preferências continuam salvas quando o servidor ou este aplicativo reiniciar.</p>
+        <div class="settings-row"><div><h3>Recuperar novos contêineres por padrão</h3><p>Vale para itens sem uma escolha individual e sem regra da stack. A regra da stack também vale para seus futuros serviços.</p></div><label class="switch"><input id="default-enabled" type="checkbox" aria-label="Recuperar novos contêineres por padrão"><span class="switch-track"></span></label></div>
+        <div class="settings-grid">
+          <div><label class="field-label" for="interval">Intervalo de verificação (segundos)</label><input class="form-input" id="interval" name="interval" type="number" min="15" max="3600" required><small class="field-help">Entre 15 e 3.600 segundos.</small></div>
+          <div><label class="field-label" for="initial-delay">Espera após iniciar o monitor (segundos)</label><input class="form-input" id="initial-delay" name="initial_delay" type="number" min="0" max="3600" required><small class="field-help">Dá tempo ao servidor para reconhecer os discos.</small></div>
+          <div><label class="field-label" for="stable-seconds">Estabilidade do disco (segundos)</label><input class="form-input" id="stable-seconds" name="stable_seconds" type="number" min="0" max="600" required><small class="field-help">Conferida nos ciclos de verificação.</small></div>
+          <div><label class="field-label" for="start-gap">Pausa entre partidas (segundos)</label><input class="form-input" id="start-gap" name="start_gap" type="number" min="0" max="60" required><small class="field-help">Espaça as partidas para reduzir o pico de carga.</small></div>
+        </div>
+        <div class="settings-save"><button class="button primary" type="submit" id="save-settings">Salvar preferências</button><span id="settings-status" class="muted" style="font-size:11px" aria-live="polite"></span></div>
+      </form>
+      <div class="settings-card"><h2>Como suas escolhas se combinam</h2><p style="margin-bottom:0">Uma escolha individual tem prioridade sobre a regra da stack. Ao ativar ou desativar a stack inteira, a mesma escolha é aplicada a todos os seus contêineres e aos futuros serviços. O painel acompanha contêineres existentes; o ZimaOS continua responsável por reconhecer e montar os discos.</p></div>
+    </section>
+    <footer class="footer"><span><strong>Sal0 AutoStart</strong> · <span data-server-name>Servidor Docker</span></span><span id="footer-status">Conectando ao Docker…</span></footer>
+  </main>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<script nonce="__CSP_NONCE__">
+"use strict";
+const el = id => document.getElementById(id);
+const icons = {
+  cube:'<svg viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 5v9l9 5 9-5V8M12 13v9m-4.5-17.5 9 5"/></svg>',
+  layers:'<svg viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5m-18 5 9 5 9-5"/></svg>',
+  play:'<svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z"/></svg>',
+  shield:'<svg viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></svg>',
+  disk:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 14h18m-4 3h.01M7 17h4"/></svg>',
+  refresh:'<svg viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 6a8 8 0 0 1 13 2M4.9 16a8 8 0 0 0 13 2"/></svg>',
+  pause:'<svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg>',
+  chevron:'<svg class="chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>',
+  sun:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg>',
+  moon:'<svg viewBox="0 0 24 24"><path d="M20.8 13A9 9 0 0 1 11 3.2 9 9 0 1 0 20.8 13Z"/></svg>',
+  lock:'<svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4m-4 4v3"/></svg>'
+};
+let state = null, csrf = '', authenticated = false, setupRequired = false, busy = false, view = 'overview', toastTimer = null, settingsDirty = false, settingsRevision = null;
+const collapsed = new Set(), expandedRows = new Set();
+const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = value => String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const clock = stamp => stamp ? new Date(stamp*1000).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—';
+const stateNames = {running:'Em execução',exited:'Parado',created:'Criado',restarting:'Reiniciando',paused:'Pausado',dead:'Requer intervenção',removing:'Removendo'};
+
+function setTheme(theme){document.documentElement.dataset.theme=theme;el('theme').innerHTML=theme==='dark'?icons.sun:icons.moon;try{localStorage.setItem('autostart.theme',theme);}catch(_){}}
+try{setTheme(localStorage.getItem('autostart.theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));}catch(_){setTheme('dark');}
+
+function toast(message,error=false){clearTimeout(toastTimer);el('toast').textContent=message;el('toast').className='toast'+(error?' error':'');el('toast').hidden=false;toastTimer=setTimeout(()=>el('toast').hidden=true,4500);}
+
+async function request(path,body){
+  const options={credentials:'same-origin',cache:'no-store',headers:{}};
+  if(body!==undefined){options.method='POST';options.headers['Content-Type']='application/json';options.headers['X-CSRF-Token']=csrf;options.body=JSON.stringify(body);}
+  const response=await fetch(path,options);
+  const result=await response.json();
+  if(!response.ok){const error=new Error(result.error||'Falha ao comunicar com o painel.');error.status=response.status;throw error;}
+  return result;
+}
+
+function connection(ok){el('connection').innerHTML='<span class="dot'+(ok?'':' offline')+'"></span>'+(ok?'Conectado':'Sem conexão');}
+
+function showAuth(session){
+  authenticated=false;setupRequired=session.setup_required;csrf=session.csrf;el('app').hidden=true;el('auth').hidden=false;el('auth-fields').hidden=false;
+  el('auth-title').textContent=setupRequired?'Seu painel, protegido.':'Bem-vindo de volta.';
+  el('auth-description').textContent=setupRequired?'Crie uma senha para acessar o painel pela sua rede ou VPN.':'Entre para gerenciar a recuperação dos contêineres.';
+  el('auth-submit').textContent=setupRequired?'Criar senha e abrir painel':'Entrar no painel';
+  el('confirm-wrap').hidden=!setupRequired;el('confirm-password').required=setupRequired;el('password').autocomplete=setupRequired?'new-password':'current-password';
+}
+
+function updateServerInfo(data){
+  if(data.server_name){for(const element of document.querySelectorAll('[data-server-name]'))element.textContent=data.server_name;document.title='Sal0 AutoStart · '+data.server_name;}
+  if(data.version)el('app-version').textContent='v'+data.version;
+}
+
+async function session(){
+  try{const result=await request('/api/session');updateServerInfo(result);csrf=result.csrf;if(result.authenticated){authenticated=true;el('auth').hidden=true;el('app').hidden=false;await refresh();}else{showAuth(result);}}
+  catch(error){el('auth-title').textContent='Não foi possível conectar.';el('auth-description').textContent='Verifique se o aplicativo está em execução e atualize esta página.';el('auth-error').textContent=error.message;}
+}
+
+function reason(record){
+  if(record.blocked)return record.blocked;
+  if(!record.enabled)return 'Fora da recuperação automática';
+  if(record.state==='running')return 'Serviço já está em execução';
+  if(state.settings.paused)return 'Recuperação automática pausada';
+  if(!['created','exited'].includes(record.state))return 'O monitor atua quando o contêiner está parado';
+  return record.diagnostic.message||'Será verificado no próximo ciclo';
+}
+
+function toggle(scope,key,checked,disabled,label,mixed=false){
+  return '<label class="switch"><input type="checkbox" data-rule="'+scope+'" data-key="'+esc(key)+'" aria-label="'+esc(label)+'" '+(checked?'checked ':'')+(disabled||busy?'disabled ':'')+(mixed?'data-mixed="true" ':'')+'><span class="switch-track"></span></label>';
+}
+
+function row(record){
+  const diagnostic=record.diagnostic||{}, warning=record.enabled&&record.state!=='running'&&['waiting_disk','error'].includes(diagnostic.stage), expanded=expandedRows.has(record.id);
+  const sources={container:'Individual',stack:'Da stack',default:'Do padrão',protected:'Protegido'};
+  const badge=stateNames[record.state]||record.state;
+  const details=expanded?'<div class="row-details"><span>ID: '+esc(record.id.slice(0,12))+'</span>'+(record.service?'<span>Serviço: '+esc(record.service)+'</span>':'')+'<span>Tentativas nesta execução: '+(diagnostic.attempts||0)+'</span><span>Última tentativa: '+clock(diagnostic.last_attempt)+'</span><span>'+esc(record.status)+'</span></div>':'';
+  return '<div class="container-row"><div class="container-id"><div class="app-icon">'+esc(record.name.slice(0,2).toUpperCase())+'</div><div style="min-width:0"><div class="container-name">'+esc(record.name)+'</div><div class="image" title="'+esc(record.image)+'">'+esc(record.image||'Imagem não informada')+'</div></div></div><div class="container-state"><div class="runtime '+esc(record.state)+'"><span class="dot"></span>'+esc(badge)+'</div><p class="row-reason'+(warning?' warning':'')+'">'+esc(reason(record))+'</p><button class="details-button" type="button" data-detail="'+esc(record.id)+'" aria-expanded="'+expanded+'">'+(expanded?'Ocultar detalhes':'Detalhes')+'</button></div><div class="container-policy"><div class="policy-copy'+(record.enabled?' enabled':'')+'">'+(record.blocked?'Protegido':record.enabled?'Recuperar':'Ignorar')+'<small>'+sources[record.policy_source]+'</small></div>'+toggle('container',record.key,record.enabled,Boolean(record.blocked),'Recuperação de '+record.name)+'</div>'+details+'</div>';
+}
+
+function renderStats(){
+  const records=state.containers, stacks=new Set(records.filter(r=>r.stack_key!=='standalone').map(r=>r.stack_key));
+  const running=records.filter(r=>r.state==='running').length, enabled=records.filter(r=>r.enabled).length, waiting=records.filter(r=>r.enabled&&['created','exited'].includes(r.state)&&r.diagnostic.stage==='waiting_disk').length;
+  const stats=[['Contêineres',records.length,stacks.size+' stacks detectadas',icons.cube,''],['Em execução',running,'Serviços em funcionamento',icons.play,'accent'],['Recuperação ativa',enabled,'Selecionados para voltar ao ar',icons.shield,'accent'],['Aguardando disco',waiting,'Retentativa automática',icons.disk,waiting?'warning':'']];
+  el('stats').innerHTML=stats.map(s=>'<div class="stat '+s[4]+'"><div class="stat-top"><span>'+s[0]+'</span>'+s[3]+'</div><div class="stat-value">'+s[1]+'</div><div class="stat-foot">'+s[2]+'</div></div>').join('');
+  el('nav-count').textContent=records.length;
+  el('inventory-meta').textContent=records.length+' contêineres · '+stacks.size+' stacks · descoberta automática';
+}
+
+function renderMonitor(){
+  const paused=state.settings.paused, scanning=state.scanning;
+  el('monitor-strip').innerHTML='<div class="monitor-info"><div class="monitor-symbol">'+(paused?icons.pause:icons.shield)+'</div><div><div class="monitor-title">'+(paused?'Recuperação pausada':scanning?'Verificando seus serviços…':'Monitoramento ativo')+'<span class="dot" style="'+(paused?'background:var(--faint)':'')+'"></span></div><div class="monitor-detail">'+(paused?'Suas escolhas continuam salvas.':('Ciclo de '+state.settings.interval+'s · <span id="countdown"></span>'))+'</div></div></div><div class="monitor-buttons"><button class="button" type="button" id="pause-monitor" '+(busy?'disabled':'')+'>'+(paused?icons.play:icons.pause)+(paused?'Retomar':'Pausar')+'</button><button class="button primary" type="button" id="check-now" '+(busy||scanning||paused?'disabled':'')+'>'+icons.refresh+'Verificar agora</button></div>';
+  updateCountdown();
+}
+
+function matches(record,query,filter){
+  if(query&&!norm(record.name+' '+record.stack+' '+record.image+' '+record.service).includes(query))return false;
+  if(filter==='enabled')return record.enabled;
+  if(filter==='disabled')return !record.enabled;
+  if(filter==='stopped')return ['exited','created'].includes(record.state);
+  if(filter==='waiting')return record.enabled&&record.diagnostic.stage==='waiting_disk'&&['exited','created'].includes(record.state);
+  if(filter==='running')return record.state==='running';
+  return true;
+}
+
+function renderStacks(){
+  const query=norm(el('search').value.trim()),filter=el('filter').value;
+  const groups=new Map();for(const record of state.containers){if(!groups.has(record.stack_key))groups.set(record.stack_key,[]);groups.get(record.stack_key).push(record);}
+  let html='';
+  for(const [key,records] of groups){
+    const visible=records.filter(record=>matches(record,query,filter));if(!visible.length)continue;
+    const eligible=records.filter(record=>!record.blocked),enabled=eligible.filter(record=>record.enabled).length,partial=enabled>0&&enabled<eligible.length,closed=collapsed.has(key);
+    const summary=eligible.length?(enabled+' de '+eligible.length+' com recuperação'):'Gerenciamento externo';
+    const chevron=icons.chevron.replace('class="chevron"','class="chevron'+(closed?' collapsed':'')+'"');
+    html+='<section class="stack"><header class="stack-head"><div class="stack-left"><button class="fold-button" data-fold="'+esc(key)+'" type="button" aria-expanded="'+(!closed)+'" aria-label="'+esc((closed?'Expandir ':'Recolher ')+records[0].stack)+'">'+chevron+'<span class="stack-icon">'+(key==='standalone'?icons.cube:icons.layers)+'</span><span><span class="stack-title"><strong>'+esc(records[0].stack)+'</strong><span class="count-badge">'+records.length+'</span></span><span class="stack-meta">'+summary+'</span></span></button></div><div class="stack-control"><span>Stack inteira</span>'+toggle('stack',key,enabled>0,eligible.length===0,'Recuperação da stack '+records[0].stack,partial)+'</div></header>'+(closed?'':visible.map(row).join(''))+'</section>';
+  }
+  if(!html){html='<div class="empty">'+icons.cube+'<h3>'+(state.last_inventory?'Nenhum contêiner encontrado':'Descobrindo seus contêineres…')+'</h3><p>'+(state.last_inventory?'Ajuste a busca ou o filtro para ver os serviços.':'A lista aparecerá assim que o Docker estiver disponível.')+'</p></div>';}
+  el('stack-list').innerHTML=html;
+  for(const checkbox of el('stack-list').querySelectorAll('[data-mixed]'))checkbox.indeterminate=true;
+}
+
+function renderEvents(){
+  el('event-list').innerHTML=state.events.length?state.events.map(event=>'<div class="event '+esc(event.level)+'"><div class="event-time">'+clock(event.time)+'</div><div class="event-body"><span class="dot"></span><span>'+esc(event.message)+'</span></div></div>').join(''):'<div class="empty"><h3>Tudo tranquilo por aqui.</h3><p>As próximas ações do monitor aparecerão nesta lista.</p></div>';
+}
+
+function fillSettings(){
+  settingsDirty=false;settingsRevision=state.revision;
+  el('default-enabled').checked=state.settings.default_enabled;
+  for(const [id,key] of [['interval','interval'],['initial-delay','initial_delay'],['stable-seconds','stable_seconds'],['start-gap','start_gap']])el(id).value=state.settings[key];
+  el('settings-status').textContent='';
+}
+
+function render(){
+  if(!state)return;
+  updateServerInfo(state);
+  el('error-banner').hidden=!state.error;el('error-banner').textContent=state.error?'Docker indisponível: '+state.error+'. As últimas informações permanecem na tela.':'';
+  if(view==='overview'){renderStats();renderMonitor();renderStacks();}
+  if(view==='activity')renderEvents();
+  if(view==='settings'&&!settingsDirty)fillSettings();
+  el('footer-status').textContent='Última descoberta: '+clock(state.last_inventory)+' · escolhas salvas no servidor';
+}
+
+async function refresh(){
+  if(!authenticated||busy)return;
+  try{state=await request('/api/state');state.receivedAt=Date.now();connection(true);render();}
+  catch(error){connection(false);if(error.status===401){await session();}else{el('error-banner').hidden=false;el('error-banner').textContent='Sem conexão com o painel. Tentarei atualizar novamente em alguns segundos.';}}
+}
+
+async function mutate(path,body,message){
+  if(busy)return false;
+  busy=true;if(view==='overview')render();el('save-settings').disabled=true;
+  try{const result=await request(path,body);if(result.containers){state=result;state.receivedAt=Date.now();}if(message)toast(message);return true;}
+  catch(error){toast(error.message,true);if(error.status===401)await session();if(error.status===409){state=await request('/api/state');state.receivedAt=Date.now();if(view==='settings')el('settings-status').textContent='O servidor mudou. Revise os valores e salve novamente.';}return false;}
+  finally{busy=false;el('save-settings').disabled=false;render();}
+}
+
+function changeView(next){view=next;for(const name of ['overview','activity','settings'])el(name+'-view').hidden=name!==view;for(const button of document.querySelectorAll('[data-view]')){button.classList.toggle('active',button.dataset.view===view);button.setAttribute('aria-current',button.dataset.view===view?'page':'false');}el('breadcrumb').textContent={overview:'Contêineres',activity:'Atividade',settings:'Configurações'}[view];if(view==='settings'&&state)fillSettings();render();}
+
+function updateCountdown(){if(!state||!el('countdown'))return;const elapsed=(Date.now()-(state.receivedAt||Date.now()))/1000;const remaining=Math.max(0,Math.ceil(state.next_check-state.server_time-elapsed));el('countdown').textContent=state.scanning?'verificação em andamento':remaining>0?'próxima verificação em '+remaining+'s':'próxima verificação em instantes';}
+
+el('theme').addEventListener('click',()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
+el('search').addEventListener('input',()=>{if(state)renderStacks();});
+el('filter').addEventListener('change',()=>{if(state)renderStacks();});
+for(const button of document.querySelectorAll('[data-view]'))button.addEventListener('click',()=>changeView(button.dataset.view));
+el('logout').addEventListener('click',async()=>{try{await request('/api/logout',{});el('password').value='';await session();}catch(error){toast(error.message,true);}});
+
+document.addEventListener('click',async event=>{
+  const fold=event.target.closest('[data-fold]');if(fold){const key=fold.dataset.fold;collapsed.has(key)?collapsed.delete(key):collapsed.add(key);renderStacks();return;}
+  const detail=event.target.closest('[data-detail]');if(detail){const id=detail.dataset.detail;expandedRows.has(id)?expandedRows.delete(id):expandedRows.add(id);renderStacks();return;}
+  if(event.target.closest('#pause-monitor')&&state){await mutate('/api/settings',{revision:state.revision,settings:{paused:!state.settings.paused}},state.settings.paused?'Recuperação retomada.':'Recuperação pausada.');}
+  if(event.target.closest('#check-now'))await mutate('/api/check',{},'Verificação solicitada.');
+});
+
+document.addEventListener('change',async event=>{
+  const input=event.target.closest('[data-rule]');if(!input||!state||busy)return;
+  const action={scope:input.dataset.rule,key:input.dataset.key,enabled:input.checked,revision:state.revision};
+  await mutate('/api/rules',action,'Escolha salva.');
+});
+
+el('auth-form').addEventListener('submit',async event=>{
+  event.preventDefault();el('auth-error').textContent='';
+  if(setupRequired&&el('password').value!==el('confirm-password').value){el('auth-error').textContent='As senhas precisam ser iguais.';return;}
+  el('auth-submit').disabled=true;
+  try{const result=await request(setupRequired?'/api/setup':'/api/login',{password:el('password').value});csrf=result.csrf;el('password').value='';el('confirm-password').value='';authenticated=true;el('auth').hidden=true;el('app').hidden=false;await refresh();}
+  catch(error){el('auth-error').textContent=error.message;}
+  finally{el('auth-submit').disabled=false;}
+});
+
+el('settings-form').addEventListener('input',()=>{settingsDirty=true;el('settings-status').textContent='Alterações ainda não salvas.';});
+el('settings-form').addEventListener('submit',async event=>{
+  event.preventDefault();if(!state)return;
+  const settings={default_enabled:el('default-enabled').checked,interval:Number(el('interval').value),initial_delay:Number(el('initial-delay').value),stable_seconds:Number(el('stable-seconds').value),start_gap:Number(el('start-gap').value)};
+  const revision=settingsRevision;
+  const saved=await mutate('/api/settings',{revision,settings},'Preferências salvas.');
+  if(saved){settingsDirty=false;settingsRevision=state.revision;el('settings-status').textContent='Tudo salvo.';}
+  else if(state)settingsRevision=state.revision;
+});
+
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refresh();});
+setInterval(()=>{if(document.visibilityState!=='hidden')refresh();},8000);
+setInterval(updateCountdown,1000);
+session();
+</script>
+</body>
+</html>

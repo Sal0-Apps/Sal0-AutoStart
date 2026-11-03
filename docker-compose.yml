@@ -1,0 +1,47 @@
+services:
+  auto-iniciar-containers:
+    image: ghcr.io/sal0-apps/sal0-autostart:latest
+    container_name: auto-iniciar-containers
+    restart: always
+    init: true
+    ports:
+      - "8788:8788"
+    environment:
+      TZ: America/Sao_Paulo
+      SERVER_NAME: VictorServer
+      CONFIG_DIR: /config
+      WEB_PORT: "8788"
+      CHECK_INTERVAL_SECONDS: "60"
+      INITIAL_DELAY_SECONDS: "45"
+      DISK_STABLE_SECONDS: "20"
+      START_GAP_SECONDS: "3"
+      REQUIRED_MOUNTS: '[]'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /:/host:ro,rslave
+      - /proc/1/mountinfo:/host-mountinfo:ro
+      - autostart-config:/config
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=8m
+    cap_drop:
+      - ALL
+    cap_add:
+      - DAC_READ_SEARCH
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 160m
+    cpus: "0.50"
+    pids_limit: 64
+    stop_grace_period: 10s
+    labels:
+      autostart.ignore: "true"
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+volumes:
+  autostart-config:
+    name: auto-iniciar-containers-config
