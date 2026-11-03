@@ -60,6 +60,11 @@ def main():
     def status(name):
         return docker("inspect", "--format", "{{.State.Status}}", name)
 
+    def panel_origin():
+        # O Docker pode escolher outra porta ao reiniciar um binding dinamico.
+        port = docker("port", monitor, "8788/tcp").splitlines()[0].rsplit(":", 1)[1]
+        return "http://127.0.0.1:" + port
+
     def login():
         nonlocal csrf
         csrf = request("/api/session")["csrf"]
@@ -80,8 +85,7 @@ def main():
                "-v", "/:/host:ro,rslave",
                "-v", "/proc/1/mountinfo:/host-mountinfo:ro",
                "-v", volume + ":/config", image)
-        port = docker("port", monitor, "8788/tcp").splitlines()[0].rsplit(":", 1)[1]
-        origin = "http://127.0.0.1:" + port
+        origin = panel_origin()
         wait_for(lambda: request("/health")["ok"], "O painel não iniciou.")
         session = request("/api/session")
         assert session["setup_required"]
@@ -99,6 +103,7 @@ def main():
         print("OK: descoberta real da stack e início apenas do contêiner selecionado.")
 
         docker("restart", monitor)
+        origin = panel_origin()
         wait_for(lambda: request("/health")["ok"], "O painel não voltou após reiniciar.")
         login()
         state = wait_for(lambda: (snapshot if any(r["name"] == selected for r in snapshot["containers"]) else None) if (snapshot := request("/api/state")) else None,
