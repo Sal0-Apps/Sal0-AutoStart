@@ -37,6 +37,7 @@ jobs:
               target.write_text(script)
               subprocess.run(['node', '--check', str(target)], check=True)
           PY
+          node tests/test_ui.cjs
           docker compose -f docker-compose.yml config -q
           docker compose -f docker-compose.yml -f compose.build.yml config -q
       - id: version

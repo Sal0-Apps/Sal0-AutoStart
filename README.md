@@ -36,6 +36,10 @@ As regras acompanham projeto/serviço/réplica do Compose, ou o nome de um cont�
 
 Stacks Compose, incluindo as criadas pelo Portainer, são agrupadas pelas labels `com.docker.compose.project` e `com.docker.compose.service`. Contêineres sem essas labels aparecem em **Sem stack**. Não é necessário informar credenciais do Portainer.
 
+O monitor lê `com.docker.compose.depends_on`, inicia os serviços selecionados na ordem das dependências e aguarda a condição declarada: `service_started`, `service_healthy` ou `service_completed_successfully`. Assim, uma stack como o Immich pode aguardar PostgreSQL e Redis saudáveis antes de iniciar o servidor. Uma dependência parada e desmarcada permanece parada; o painel explica qual serviço está aguardando. Tarefas de inicialização já concluídas com código zero não são repetidas quando usadas por `service_completed_successfully`.
+
+A identificação depende das labels presentes nos contêineres existentes. Sem a label de dependências, o monitor mantém a recuperação individual. Labels antigas que contêm apenas o nome do serviço aguardam saúde quando há healthcheck, ou estado em execução quando não há. A label do Compose não preserva `required: false`; uma dependência listada, mas ausente, é exibida como pendente.
+
 O monitor trabalha com contêineres existentes; não recria stacks apagadas nem executa `docker compose up`. Tarefas temporárias, itens marcados com `autostart.ignore=true` e contêineres de serviços Swarm aparecem protegidos. O próprio Swarm é responsável por seus serviços.
 
 ## HD atrasado
@@ -58,6 +62,10 @@ Os padrões iniciais são: espera de 45 segundos, ciclo de 60 segundos, estabili
 
 O volume `auto-iniciar-containers-config`, montado em `/config`, guarda senha e preferências. Inclua esse volume em seus backups. Histórico e contadores de tentativas pertencem à execução atual e reiniciam com o monitor.
 
+Em **Detalhes**, veja cada caminho de armazenamento, as dependências, o último erro do Docker, o código de saída e um eventual encerramento por falta de memória. O painel diferencia contêiner ativo, saúde em verificação e falha de saúde; um processo ativo não garante que a aplicação esteja funcionando. Contêineres em execução ou reiniciando continuam sob responsabilidade do Docker: o AutoStart retoma as tentativas quando estiverem parados.
+
+Em **Atividade → Baixar diagnóstico**, exporte o inventário e os resultados das verificações em JSON. O relatório exige login e não inclui a configuração de autenticação do painel nem o ambiente dos contêineres. Em aplicativos com vários discos e bibliotecas externas, todos os caminhos precisam estar disponíveis; os caminhos pendentes aparecem individualmente, sem liberar a partida sobre uma pasta vazia.
+
 ```bash
 docker logs --tail 100 auto-iniciar-containers
 ```
@@ -75,6 +83,6 @@ python -m unittest discover -s tests -v
 docker compose -f docker-compose.yml -f compose.build.yml up -d --build
 ```
 
-O teste `tests/smoke_docker.py` é destinado a um runner Docker descartável: ele cria contêineres e um volume próprios, restringe a recuperação aos seus itens de teste, confirma seleção/persistência e remove somente esses recursos de teste.
+O teste `tests/smoke_docker.py` é destinado a um runner Docker descartável: ele cria contêineres e um volume próprios, seleciona seus itens de teste, confirma seleção, persistência e espera por dependências com healthcheck, e remove somente esses recursos de teste.
 
 O aplicativo tem limites de 0,5 CPU e 160 MiB de RAM no Compose; esses valores são tetos, não reservas. A descoberta é atualizada a cada dez segundos e o painel lê o inventário em memória.

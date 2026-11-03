@@ -54,18 +54,18 @@ body{background:radial-gradient(circle at 50% -20%,#49aeef21,transparent 42%),va
     <button type="button" data-view="settings"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="8" cy="7" r="3" fill="var(--panel)"/><circle cx="16" cy="17" r="3" fill="var(--panel)"/></svg>Configurações</button>
   </nav>
   <main class="main">
-    <div class="topbar"><div class="crumb"><span data-server-name>Servidor Docker</span><span>/</span><strong id="breadcrumb">Contêineres</strong></div><span class="version" id="app-version">v2.1.0</span></div>
+    <div class="topbar"><div class="crumb"><span data-server-name>Servidor Docker</span><span>/</span><strong id="breadcrumb">Contêineres</strong></div><span class="version" id="app-version">v2.2.0</span></div>
     <div id="error-banner" class="error-banner" role="alert" hidden></div>
     <section id="overview-view">
       <div class="page-head"><div><p class="eyebrow">RECUPERAÇÃO AUTOMÁTICA</p><h1>Recuperação de contêineres</h1><p class="subtitle">Escolha quais serviços devem voltar ao ar quando o armazenamento estiver disponível.</p></div></div>
       <div id="stats" class="stats"></div>
       <div id="monitor-strip" class="monitor-strip"></div>
       <div class="section-head"><div><h2>Stacks e contêineres</h2><p id="inventory-meta">Descobrindo os serviços do servidor…</p></div><span class="legend"><span class="mini-switch"></span>Recuperação automática</span></div>
-      <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><label class="sr-only" for="search">Buscar contêiner ou stack</label><input id="search" type="search" placeholder="Buscar contêiner ou stack…" autocomplete="off"></div><label class="sr-only" for="filter">Filtrar contêineres</label><select id="filter"><option value="all">Todos os contêineres</option><option value="enabled">Com recuperação</option><option value="disabled">Sem recuperação</option><option value="stopped">Parados</option><option value="waiting">Aguardando disco</option><option value="running">Em execução</option></select></div>
+      <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><label class="sr-only" for="search">Buscar contêiner ou stack</label><input id="search" type="search" placeholder="Buscar contêiner ou stack…" autocomplete="off"></div><label class="sr-only" for="filter">Filtrar contêineres</label><select id="filter"><option value="all">Todos os contêineres</option><option value="enabled">Com recuperação</option><option value="disabled">Sem recuperação</option><option value="stopped">Parados</option><option value="waiting">Aguardando</option><option value="running">Em execução</option></select></div>
       <div id="stack-list" class="stack-list"><div class="skeleton"></div><div class="skeleton"></div></div>
       <p class="note"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-9h.01"/></svg><span>As escolhas são salvas automaticamente. Desativar a recuperação deixa o contêiner no estado atual e apenas impede que este monitor tente iniciá-lo.</span></p>
     </section>
-    <section id="activity-view" hidden><div class="page-head"><div><p class="eyebrow">ACOMPANHAMENTO</p><h1>Atividade do monitor</h1><p class="subtitle">Tentativas de início, espera pelo disco e alterações de configuração desta execução.</p></div></div><div id="event-list" class="event-list"></div></section>
+    <section id="activity-view" hidden><div class="page-head"><div><p class="eyebrow">ACOMPANHAMENTO</p><h1>Atividade do monitor</h1><p class="subtitle">Tentativas de início, espera por discos e dependências desta execução.</p></div><a class="button" href="/api/diagnostics" download="sal0-autostart-diagnostico.json">Baixar diagnóstico</a></div><div id="event-list" class="event-list"></div></section>
     <section id="settings-view" hidden>
       <div class="page-head"><div><p class="eyebrow">PREFERÊNCIAS</p><h1>Do seu jeito.</h1><p class="subtitle">Ajuste como o monitor encontra e recupera seus serviços.</p></div></div>
       <form id="settings-form" class="settings-card"><h2>Comportamento da recuperação</h2><p>As preferências continuam salvas quando o servidor ou este aplicativo reiniciar.</p>
@@ -144,8 +144,11 @@ async function session(){
 function reason(record){
   if(record.blocked)return record.blocked;
   if(!record.enabled)return 'Fora da recuperação automática';
-  if(record.state==='running')return 'Serviço já está em execução';
+  if(record.state==='running'&&record.health==='unhealthy')return 'Contêiner ativo, mas o teste de saúde falhou. Consulte os registros do serviço.';
+  if(record.state==='running'&&record.health==='starting')return 'Contêiner ativo. Aguardando o teste de saúde da aplicação.';
+  if(record.state==='running')return record.health==='healthy'?'Contêiner ativo e teste de saúde aprovado':'Contêiner ativo; sem teste de saúde informado pelo Docker';
   if(state.settings.paused)return 'Recuperação automática pausada';
+  if(record.state==='restarting')return 'O Docker está reiniciando este contêiner. O AutoStart retenta se ele ficar parado.';
   if(!['created','exited'].includes(record.state))return 'O monitor atua quando o contêiner está parado';
   return record.diagnostic.message||'Será verificado no próximo ciclo';
 }
@@ -155,17 +158,19 @@ function toggle(scope,key,checked,disabled,label,mixed=false){
 }
 
 function row(record){
-  const diagnostic=record.diagnostic||{}, warning=record.enabled&&record.state!=='running'&&['waiting_disk','error'].includes(diagnostic.stage), expanded=expandedRows.has(record.id);
+  const diagnostic=record.diagnostic||{}, warning=record.health==='unhealthy'||record.enabled&&record.state!=='running'&&['waiting_disk','waiting_dependency','error'].includes(diagnostic.stage), expanded=expandedRows.has(record.id);
   const sources={container:'Individual',stack:'Da stack',default:'Do padrão',protected:'Protegido'};
-  const badge=stateNames[record.state]||record.state;
-  const details=expanded?'<div class="row-details"><span>ID: '+esc(record.id.slice(0,12))+'</span>'+(record.service?'<span>Serviço: '+esc(record.service)+'</span>':'')+'<span>Tentativas nesta execução: '+(diagnostic.attempts||0)+'</span><span>Última tentativa: '+clock(diagnostic.last_attempt)+'</span><span>'+esc(record.status)+'</span></div>':'';
+  const badge=record.state==='running'&&record.health==='unhealthy'?'Ativo · falha de saúde':stateNames[record.state]||record.state;
+  const paths=(diagnostic.paths||[]).map(path=>'<span>'+esc(path.ready?'Disponível: ':'Aguardando: ')+esc(path.source)+(path.ready?'':' · '+esc(path.message))+'</span>').join('');
+  const dependencies=(diagnostic.dependencies||[]).map(dependency=>'<span>'+esc(dependency.ready?'Dependência pronta: ':'Aguardando dependência: ')+esc(dependency.name||dependency.service)+' · '+esc(dependency.health||dependency.state)+'</span>').join('');
+  const details=expanded?'<div class="row-details"><span>ID: '+esc(record.id.slice(0,12))+'</span>'+(record.service?'<span>Serviço: '+esc(record.service)+'</span>':'')+'<span>Tentativas nesta execução: '+(diagnostic.attempts||0)+'</span><span>Última tentativa: '+clock(diagnostic.last_attempt)+'</span><span>'+esc(record.status)+'</span>'+(diagnostic.oom_killed?'<span>Última execução encerrada por falta de memória (OOM).</span>':'')+(diagnostic.exit_code?'<span>Código da última saída: '+esc(diagnostic.exit_code)+'</span>':'')+(diagnostic.docker_error?'<span>Erro do Docker: '+esc(diagnostic.docker_error)+'</span>':'')+paths+dependencies+'</div>':'';
   return '<div class="container-row"><div class="container-id"><div class="app-icon">'+esc(record.name.slice(0,2).toUpperCase())+'</div><div style="min-width:0"><div class="container-name">'+esc(record.name)+'</div><div class="image" title="'+esc(record.image)+'">'+esc(record.image||'Imagem não informada')+'</div></div></div><div class="container-state"><div class="runtime '+esc(record.state)+'"><span class="dot"></span>'+esc(badge)+'</div><p class="row-reason'+(warning?' warning':'')+'">'+esc(reason(record))+'</p><button class="details-button" type="button" data-detail="'+esc(record.id)+'" aria-expanded="'+expanded+'">'+(expanded?'Ocultar detalhes':'Detalhes')+'</button></div><div class="container-policy"><div class="policy-copy'+(record.enabled?' enabled':'')+'">'+(record.blocked?'Protegido':record.enabled?'Recuperar':'Ignorar')+'<small>'+sources[record.policy_source]+'</small></div>'+toggle('container',record.key,record.enabled,Boolean(record.blocked),'Recuperação de '+record.name)+'</div>'+details+'</div>';
 }
 
 function renderStats(){
   const records=state.containers, stacks=new Set(records.filter(r=>r.stack_key!=='standalone').map(r=>r.stack_key));
-  const running=records.filter(r=>r.state==='running').length, enabled=records.filter(r=>r.enabled).length, waiting=records.filter(r=>r.enabled&&['created','exited'].includes(r.state)&&r.diagnostic.stage==='waiting_disk').length;
-  const stats=[['Contêineres',records.length,stacks.size+' stacks detectadas',icons.cube,''],['Em execução',running,'Serviços em funcionamento',icons.play,'accent'],['Recuperação ativa',enabled,'Selecionados para voltar ao ar',icons.shield,'accent'],['Aguardando disco',waiting,'Retentativa automática',icons.disk,waiting?'warning':'']];
+  const running=records.filter(r=>r.state==='running').length, unhealthy=records.filter(r=>r.health==='unhealthy').length, enabled=records.filter(r=>r.enabled).length, waiting=records.filter(r=>r.enabled&&['created','exited'].includes(r.state)&&['waiting_disk','waiting_dependency'].includes(r.diagnostic.stage)).length;
+  const stats=[['Contêineres',records.length,stacks.size+' stacks detectadas',icons.cube,''],['Em execução',running,unhealthy?unhealthy+' com falha de saúde':'Contêineres ativos',icons.play,unhealthy?'warning':'accent'],['Recuperação ativa',enabled,'Selecionados para voltar ao ar',icons.shield,'accent'],['Aguardando',waiting,'Discos ou dependências',icons.disk,waiting?'warning':'']];
   el('stats').innerHTML=stats.map(s=>'<div class="stat '+s[4]+'"><div class="stat-top"><span>'+s[0]+'</span>'+s[3]+'</div><div class="stat-value">'+s[1]+'</div><div class="stat-foot">'+s[2]+'</div></div>').join('');
   el('nav-count').textContent=records.length;
   el('inventory-meta').textContent=records.length+' contêineres · '+stacks.size+' stacks · descoberta automática';
@@ -182,7 +187,7 @@ function matches(record,query,filter){
   if(filter==='enabled')return record.enabled;
   if(filter==='disabled')return !record.enabled;
   if(filter==='stopped')return ['exited','created'].includes(record.state);
-  if(filter==='waiting')return record.enabled&&record.diagnostic.stage==='waiting_disk'&&['exited','created'].includes(record.state);
+  if(filter==='waiting')return record.enabled&&['waiting_disk','waiting_dependency'].includes(record.diagnostic.stage)&&['exited','created'].includes(record.state);
   if(filter==='running')return record.state==='running';
   return true;
 }

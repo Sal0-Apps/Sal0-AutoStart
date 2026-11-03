@@ -64,7 +64,7 @@ x-casaos:
   category: Developer
   architectures:
     - amd64
-  version: "2.1.0"
+  version: "2.2.0"
   tagline:
     en_US: Automatic recovery for your Docker containers
     pt_BR: Recuperação automática dos seus contêineres Docker

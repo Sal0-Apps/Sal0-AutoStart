@@ -33,9 +33,10 @@ def wait_for(callback, message, timeout=60):
 def main():
     image = sys.argv[1]
     prefix = "sal0-ci-" + secrets.token_hex(4)
-    selected, excluded, monitor = (prefix + suffix for suffix in ("-selected", "-excluded", "-monitor"))
+    selected, excluded, monitor, database, redis, server = (prefix + suffix for suffix in (
+        "-selected", "-excluded", "-monitor", "-z-database", "-y-redis", "-a-immich"))
     volume = prefix + "-config"
-    containers = [monitor, selected, excluded]
+    containers = [monitor, selected, excluded, server, redis, database]
     password = secrets.token_urlsafe(24)
     opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
     csrf = ""
@@ -50,12 +51,18 @@ def main():
         with opener.open(urllib.request.Request(origin + path, data=payload, headers=headers), timeout=5) as response:
             return json.load(response)
 
-    def fixture(name, service):
-        docker("create", "--name", name,
-               "--label", "com.docker.compose.project=" + prefix,
+    def fixture(name, service, project=None, dependencies=None, healthcheck=None):
+        arguments = ["create", "--name", name,
+               "--label", "com.docker.compose.project=" + (project or prefix),
                "--label", "com.docker.compose.service=" + service,
-               "--label", "com.docker.compose.container-number=1",
-               "--entrypoint", "python", image, "-c", "import time; time.sleep(300)")
+               "--label", "com.docker.compose.container-number=1"]
+        if dependencies:
+            arguments.extend(["--label", "com.docker.compose.depends_on=" + dependencies])
+        if healthcheck:
+            arguments.extend(["--health-cmd", healthcheck, "--health-interval", "1s",
+                              "--health-timeout", "2s", "--health-retries", "1"])
+        arguments.extend(["--entrypoint", "python", image, "-c", "import time; time.sleep(300)"])
+        docker(*arguments)
 
     def status(name):
         return docker("inspect", "--format", "{{.State.Status}}", name)
@@ -115,6 +122,39 @@ def main():
         wait_for(lambda: status(selected) == "running", "A escolha salva não foi aplicada após reiniciar.")
         assert status(excluded) == "created"
         print("OK: senha e escolhas persistiram e a recuperação continuou após reiniciar.")
+
+        # Reproduz a estrutura do Immich com banco e Redis: os testes de saude
+        # sao reais, mas usam a propria imagem, sem baixar ou alterar um banco.
+        project = prefix + "-immich"
+        fixture(server, "immich-server", project,
+                dependencies="database:service_healthy:false,redis:service_healthy:false")
+        fixture(database, "database", project,
+                healthcheck='python -c "from pathlib import Path; raise SystemExit(not Path(\'/tmp/ready\').is_file())"')
+        fixture(redis, "redis", project, healthcheck='python -c "pass"')
+        request("/api/check", {})
+        state = wait_for(lambda: (snapshot if any(r["name"] == server for r in snapshot["containers"]) else None)
+                         if (snapshot := request("/api/state")) else None,
+                         "A stack com dependências não apareceu no inventário.")
+        target = next(r for r in state["containers"] if r["name"] == server)
+        request("/api/rules", {"scope": "stack", "key": target["stack_key"], "enabled": True, "revision": state["revision"]})
+        wait_for(lambda: status(database) == "running" and status(redis) == "running",
+                 "As dependências selecionadas não iniciaram.")
+        diagnostic = wait_for(lambda: (record["diagnostic"] if record["diagnostic"].get("stage") == "waiting_dependency" else None)
+                              if (record := next(r for r in request("/api/state")["containers"] if r["name"] == server)) else None,
+                              "O servidor não aguardou a saúde das dependências.")
+        assert status(server) == "created", "O servidor iniciou antes de o banco ficar saudável."
+        assert any(d.get("name") == database and not d["ready"] for d in diagnostic["dependencies"])
+        docker("exec", database, "python", "-c", "from pathlib import Path; Path('/tmp/ready').touch()")
+        wait_for(lambda: docker("inspect", "--format", "{{.State.Health.Status}}", database) == "healthy",
+                 "O healthcheck do banco de teste não ficou saudável.")
+        wait_for(lambda: docker("inspect", "--format", "{{.State.Health.Status}}", redis) == "healthy",
+                 "O healthcheck do Redis de teste não ficou saudável.")
+        request("/api/check", {})
+        wait_for(lambda: status(server) == "running", "O servidor não iniciou após as dependências ficarem saudáveis.")
+        report = request("/api/diagnostics")
+        assert any(r["name"] == server for r in report["containers"])
+        assert "auth" not in report
+        print("OK: servidor aguardou banco e Redis saudáveis; diagnóstico autenticado disponível.")
     except Exception:
         print(docker("logs", "--tail", "100", monitor, check=False))
         raise

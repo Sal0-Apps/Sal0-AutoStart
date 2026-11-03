@@ -227,6 +227,157 @@ class MonitorTests(Base):
         monitor.scan()
         self.assertEqual(docker.started, ["b-id", "a-id"])
 
+    def test_immich_waits_for_postgres_and_redis_health(self):
+        database = item("immich-postgres", "immich", "database", state="running")
+        database["State"]["Health"] = {"Status": "starting"}
+        redis = item("immich-redis", "immich", "redis", state="running")
+        redis["State"]["Health"] = {"Status": "healthy"}
+        server = item("immich-server", "immich", "immich-server", extra={
+            "com.docker.compose.depends_on": "database:service_healthy:false,redis:service_healthy:false"})
+        docker = Docker(server, database, redis)
+        monitor = app.Monitor(self.store, docker)
+        monitor.discover()
+        monitor.scan()
+        self.assertEqual(docker.started, [])
+        diagnostic = next(r for r in monitor.snapshot()["containers"] if r["name"] == "immich-server")["diagnostic"]
+        self.assertEqual(diagnostic["stage"], "waiting_dependency")
+        self.assertIn("immich-postgres", diagnostic["message"])
+        docker.items[database["Id"]]["State"]["Health"]["Status"] = "healthy"
+        monitor.scan()
+        self.assertEqual(docker.started, [server["Id"]])
+
+    def test_dependencies_start_before_alphabetically_earlier_app(self):
+        server = item("a-server", "stack", "app", extra={"com.docker.compose.depends_on": "db:service_started:false"})
+        database = item("z-database", "stack", "db")
+        docker = Docker(server, database)
+        monitor = app.Monitor(self.store, docker)
+        monitor.discover()
+        monitor.scan()
+        self.assertEqual(docker.started, [database["Id"], server["Id"]])
+
+    def test_disabled_dependency_is_not_started_and_app_waits(self):
+        server = item("a-server", "stack", "app", extra={"com.docker.compose.depends_on": "db:service_started:false"})
+        database = item("z-database", "stack", "db")
+        docker = Docker(server, database)
+        monitor = app.Monitor(self.store, docker)
+        monitor.discover()
+        record = next(r for r in monitor.records if r["service"] == "db")
+        self.rule("container", record["key"], False, monitor.records)
+        monitor.scan()
+        self.assertEqual(docker.started, [])
+        diagnostic = next(r for r in monitor.snapshot()["containers"] if r["service"] == "app")["diagnostic"]
+        self.assertEqual(diagnostic["stage"], "waiting_dependency")
+        self.assertIn("desativada", diagnostic["message"])
+
+    def test_dependencies_are_scoped_to_the_same_project(self):
+        server = item("server", "one", "app", extra={"com.docker.compose.depends_on": "db:service_healthy:false"})
+        wrong_database = item("database", "two", "db", state="running")
+        wrong_database["State"]["Health"] = {"Status": "healthy"}
+        docker = Docker(server, wrong_database)
+        monitor = app.Monitor(self.store, docker)
+        monitor.discover()
+        monitor.scan()
+        self.assertEqual(docker.started, [])
+        diagnostic = next(r for r in monitor.snapshot()["containers"] if r["name"] == "server")["diagnostic"]
+        self.assertEqual(diagnostic["stage"], "waiting_dependency")
+        self.assertIn("não encontrado", diagnostic["message"])
+
+    def test_completed_migration_is_not_restarted_and_allows_the_app(self):
+        job = item("migration", "stack", "migration")
+        job["State"]["ExitCode"] = 0
+        server = item("server", "stack", "app", extra={
+            "com.docker.compose.depends_on": "migration:service_completed_successfully:false"})
+        docker = Docker(job, server)
+        monitor = app.Monitor(self.store, docker)
+        monitor.discover()
+        monitor.scan()
+        self.assertEqual(docker.started, [server["Id"]])
+
+    def test_all_missing_immich_disks_are_reported_without_starting(self):
+        paths = ["/media/2TB Toshiba/immich", "/media/google_drive_test/All photos", "/media/UN"]
+        for path in paths:
+            (self.host / path.lstrip("/")).mkdir(parents=True)
+        server = item("immich-server", "immich", "immich-server")
+        server["Mounts"] = [{"Type": "bind", "Source": path} for path in paths]
+        docker = Docker(server)
+        monitor = app.Monitor(self.store, docker)
+        monitor.discover()
+        monitor.scan()
+        self.assertEqual(docker.started, [])
+        diagnostic = monitor.snapshot()["containers"][0]["diagnostic"]
+        self.assertEqual(diagnostic["stage"], "waiting_disk")
+        self.assertEqual({p["source"] for p in diagnostic["paths"] if not p["ready"]}, set(paths))
+        mounted = ["/media/2TB Toshiba", "/media/google_drive_test", "/media/UN"]
+        self.mountinfo.write_text(self.root_mount + "".join(
+            f"{index} 1 {self.device} / {path.replace(' ', chr(92) + '040')} rw - ext4 /dev/disk{index} rw\n"
+            for index, path in enumerate(mounted, 2)))
+        monitor.scan()
+        self.assertEqual(docker.started, [server["Id"]])
+
+    def test_docker_socket_failure_is_not_reported_as_missing_disk(self):
+        docker = Docker(item("server"))
+        monitor = app.Monitor(self.store, docker)
+        monitor.discover()
+        with patch.object(docker, "inspect", side_effect=ConnectionRefusedError("Docker socket unavailable")):
+            monitor.scan()
+        self.assertEqual(monitor.snapshot()["containers"][0]["diagnostic"]["stage"], "error")
+
+    def test_legacy_dependency_waits_for_existing_healthcheck(self):
+        database = item("database", "stack", "db", state="running")
+        database["State"]["Health"] = {"Status": "unhealthy"}
+        server = item("server", "stack", "app", extra={"com.docker.compose.depends_on": "db"})
+        docker = Docker(server, database)
+        monitor = app.Monitor(self.store, docker)
+        monitor.discover()
+        monitor.scan()
+        self.assertEqual(docker.started, [])
+        docker.items[database["Id"]]["State"].pop("Health")
+        monitor.scan()
+        self.assertEqual(docker.started, [server["Id"]])
+
+    def test_healthy_disabled_dependency_can_be_used_without_changing_its_rule(self):
+        database = item("database", "stack", "db", state="running")
+        database["State"]["Health"] = {"Status": "healthy"}
+        server = item("server", "stack", "app", extra={"com.docker.compose.depends_on": "db:service_healthy:false"})
+        docker = Docker(server, database)
+        monitor = app.Monitor(self.store, docker)
+        monitor.discover()
+        record = next(r for r in monitor.records if r["service"] == "db")
+        self.rule("container", record["key"], False, monitor.records)
+        monitor.scan()
+        self.assertEqual(docker.started, [server["Id"]])
+        self.assertFalse(app.Store.enabled(record, self.store.snapshot())[0])
+
+    def test_missing_required_healthcheck_does_not_release_the_app(self):
+        database = item("database", "stack", "db", state="running")
+        server = item("server", "stack", "app", extra={"com.docker.compose.depends_on": "db:service_healthy:false"})
+        docker = Docker(server, database)
+        monitor = app.Monitor(self.store, docker)
+        monitor.discover()
+        monitor.scan()
+        self.assertEqual(docker.started, [])
+        self.assertIn("sem teste de saúde", next(r for r in monitor.snapshot()["containers"] if r["name"] == "server")["diagnostic"]["message"])
+
+    def test_dependency_cycle_does_not_block_an_unrelated_container(self):
+        a = item("a", "stack", "a", extra={"com.docker.compose.depends_on": "b:service_started:false"})
+        b = item("b", "stack", "b", extra={"com.docker.compose.depends_on": "a:service_started:false"})
+        solo = item("solo")
+        docker = Docker(a, b, solo)
+        monitor = app.Monitor(self.store, docker)
+        monitor.discover()
+        monitor.scan()
+        self.assertEqual(docker.started, [solo["Id"]])
+        for record in monitor.snapshot()["containers"]:
+            if record["name"] != "solo":
+                self.assertEqual(record["diagnostic"]["stage"], "waiting_dependency")
+
+    def test_discovery_exposes_unhealthy_instead_of_claiming_application_success(self):
+        server = item("immich-server", state="running")
+        server["Status"] = "Up 2 minutes (unhealthy)"
+        monitor = app.Monitor(self.store, Docker(server))
+        monitor.discover()
+        self.assertEqual(monitor.snapshot()["containers"][0]["health"], "unhealthy")
+
     def test_snapshot_does_not_expose_authentication_data(self):
         self.store.setup_password("a-private-password")
         monitor = app.Monitor(self.store, Docker(item("app")))
@@ -342,6 +493,18 @@ class HTTPTests(Base):
         self.assertIn(b"<svg", body)
         _, session, _ = self.http("GET", "/api/session")
         self.assertEqual(session["server_name"], app.SERVER_NAME)
+
+    def test_diagnostic_download_requires_login_and_excludes_credentials(self):
+        self.assertEqual(self.http("GET", "/api/diagnostics")[0], 401)
+        self.monitor.docker.items["app-id"]["Config"]["Env"] = ["DB_PASSWORD=a-container-secret"]
+        self.setup_login()
+        self.monitor.scan()
+        status, report, response = self.http("GET", "/api/diagnostics")
+        self.assertEqual(status, 200)
+        self.assertIn("application/json", response.getheader("Content-Type"))
+        self.assertEqual(report["containers"][0]["name"], "app")
+        for private in ("auth", "digest", "salt", "DB_PASSWORD", "a-container-secret", "test-password"):
+            self.assertNotIn('"' + private + '"' if private == "auth" else private, json.dumps(report))
 
 
 if __name__ == "__main__":

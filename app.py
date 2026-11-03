@@ -10,12 +10,13 @@ import secrets
 import signal
 import threading
 import time
+from graphlib import CycleError, TopologicalSorter
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
 import storage_guard as storage
 
-VERSION = Path(__file__).with_name("VERSION").read_text().strip() if Path(__file__).with_name("VERSION").is_file() else "2.1.0"
+VERSION = Path(__file__).with_name("VERSION").read_text().strip() if Path(__file__).with_name("VERSION").is_file() else "2.2.0"
 SERVER_NAME = os.getenv("SERVER_NAME", "Servidor Docker").strip()[:80] or "Servidor Docker"
 PORT = int(os.getenv("WEB_PORT", "8788"))
 CONFIG_DIR = Path(os.getenv("CONFIG_DIR", "/config"))
@@ -24,6 +25,47 @@ INDEX_HTML = None  # O empacotador injeta o HTML no Compose; no ZIP ele e um arq
 
 def now():
     return time.time()
+
+
+def compose_dependencies(labels):
+    dependencies = []
+    for value in labels.get("com.docker.compose.depends_on", "").split(","):
+        parts = value.strip().split(":")
+        if parts[0]:
+            # A terceira parte e restart, NAO required. false nao torna o banco opcional.
+            dependencies.append({"service": parts[0], "condition": parts[1] if len(parts) > 1 and parts[1] else "running_or_healthy"})
+    return dependencies
+
+
+def health_status(item):
+    state = item.get("State")
+    if isinstance(state, dict):
+        return (state.get("Health") or {}).get("Status", "")
+    status = item.get("Status", "")
+    return "unhealthy" if "(unhealthy)" in status else "starting" if "(health: starting)" in status else "healthy" if "(healthy)" in status else ""
+
+
+def dependency_order(records):
+    services = collections.defaultdict(list)
+    for record in records:
+        if record["service"] and not record["oneoff"]:
+            services[(record["stack_key"], record["service"])].append(record["id"])
+    graph = {record["id"]: {cid for dependency in record["dependencies"]
+             for cid in services[(record["stack_key"], dependency["service"])]} for record in records}
+    sorter = TopologicalSorter(graph)
+    try:
+        sorter.prepare()
+    except CycleError:
+        # Itens fora do ciclo continuam funcionando; os demais explicam a espera.
+        pass
+    ids = []
+    while sorter.is_active():
+        group = sorter.get_ready()
+        ids.extend(group)
+        sorter.done(*group)
+    by_id = {record["id"]: record for record in records}
+    seen = set(ids)
+    return [by_id[cid] for cid in ids] + [record for record in records if record["id"] not in seen]
 
 
 def identity(item):
@@ -43,7 +85,9 @@ def identity(item):
         blocked = "Monitor ou contêiner excluído por configuração"
     elif str(labels.get("com.docker.compose.oneoff", "false")).lower() == "true":
         blocked = "Tarefa temporária do Compose"
-    return {"name": name, "key": key, "stack": project or "Sem stack", "stack_key": stack_key, "service": service, "blocked": blocked, "swarm": swarm}
+    return {"name": name, "key": key, "stack": project or "Sem stack", "stack_key": stack_key, "service": service,
+            "blocked": blocked, "swarm": swarm, "oneoff": str(labels.get("com.docker.compose.oneoff", "false")).lower() == "true",
+            "dependencies": compose_dependencies(labels) if project and not swarm else []}
 
 
 class Conflict(Exception):
@@ -218,7 +262,8 @@ class Monitor:
         records = []
         for item in raw:
             record = identity(item)
-            record.update({"id": item["Id"], "state": item.get("State", "unknown"), "image": item.get("Image", ""), "status": item.get("Status", "")})
+            record.update({"id": item["Id"], "state": item.get("State", "unknown"), "image": item.get("Image", ""),
+                           "status": item.get("Status", ""), "health": health_status(item)})
             records.append(record)
         self.store.seed_legacy(records)
         with self.lock:
@@ -233,20 +278,91 @@ class Monitor:
         with self.lock:
             return copy.deepcopy(self.records)
 
-    def set_diagnostic(self, record, stage, message, attempt=False):
+    def set_diagnostic(self, record, stage=None, message=None, attempt=False, **details):
         with self.lock:
             diagnostic = self.diagnostics.setdefault(record["id"], {"attempts": 0, "last_attempt": None})
-            diagnostic.update({"stage": stage, "message": message, "checked_at": now()})
+            diagnostic.update(details, checked_at=now())
+            if stage is not None:
+                diagnostic["stage"] = stage
+            if message is not None:
+                diagnostic["message"] = message
             if attempt:
                 diagnostic["attempts"] += 1
                 diagnostic["last_attempt"] = now()
+
+    def storage_status(self, inspected):
+        checks = {path: False for path in storage.data_sources(inspected, self.docker)}
+        checks.update({path: True for path in storage.REQUIRED})
+        try:
+            mounts = storage.read_mounts()
+        except (OSError, ValueError) as error:
+            return (), [{"source": path, "ready": False, "message": str(error)} for path in sorted(checks)], [str(error)]
+        signature, paths, errors = [], [], []
+        for path, exact in sorted(checks.items()):
+            try:
+                result = storage.probe_path(path, mounts, exact_mount=exact)
+                signature.append(result)
+                paths.append({"source": path, "resolved": result[0], "mount": result[4], "ready": True, "message": "Disponível"})
+            except OSError as error:
+                paths.append({"source": path, "ready": False, "message": str(error)})
+                errors.append(str(error))
+        return tuple(signature), paths, errors
+
+    def dependency_status(self, record, records, inspect):
+        reports, errors = [], []
+        for dependency in record["dependencies"]:
+            service, condition = dependency["service"], dependency["condition"]
+            matches = [candidate for candidate in records if candidate["stack_key"] == record["stack_key"]
+                       and candidate["service"] == service and not candidate["oneoff"]]
+            if not matches:
+                reports.append({"service": service, "condition": condition, "ready": False, "state": "missing", "health": ""})
+                errors.append(service + " (não encontrado nesta stack)")
+            for candidate in matches:
+                details = inspect(candidate["id"])
+                state = details.get("State") or {}
+                status, health = state.get("Status", "unknown"), health_status(details)
+                running = status == "running" and not state.get("Paused") and not state.get("Restarting")
+                if condition == "service_healthy":
+                    ready = running and health == "healthy"
+                elif condition == "service_completed_successfully":
+                    ready = status == "exited" and state.get("ExitCode") == 0
+                elif condition == "service_started":
+                    ready = running
+                elif condition == "running_or_healthy":
+                    ready = running and health in ("", "healthy")
+                else:
+                    ready = False
+                enabled = Store.enabled(candidate, self.store.snapshot())[0]
+                reports.append({"service": service, "name": candidate["name"], "condition": condition,
+                                "state": status, "health": health, "ready": ready, "recovery_enabled": enabled})
+                if not ready:
+                    explanation = {"created": "ainda não iniciou", "exited": "parado", "restarting": "reiniciando",
+                                   "paused": "pausado", "dead": "requer intervenção"}.get(status, status)
+                    if running:
+                        explanation = {"starting": "teste de saúde em andamento", "unhealthy": "teste de saúde falhou"}.get(health, "sem teste de saúde" if condition == "service_healthy" else "condição ainda não atendida")
+                    if condition not in ("service_healthy", "service_completed_successfully", "service_started", "running_or_healthy"):
+                        explanation = "condição desconhecida: " + condition
+                    if not running and not enabled:
+                        explanation += "; recuperação desativada"
+                    errors.append(candidate["name"] + " (" + explanation + ")")
+        return reports, errors
 
     def scan(self):
         with self.lock:
             self.scanning = True
             self.last_check = now()
         try:
-            for record in self.current_records():
+            records = self.current_records()
+            inspected_cache = {}
+
+            def inspect(cid):
+                if cid not in inspected_cache:
+                    inspected_cache[cid] = self.docker.inspect(cid)
+                return inspected_cache[cid]
+
+            completed_services = {(record["stack_key"], dependency["service"]) for record in records
+                                  for dependency in record["dependencies"] if dependency["condition"] == "service_completed_successfully"}
+            for record in dependency_order(records):
                 self.heartbeat = now()
                 if self.stop.is_set():
                     break
@@ -256,20 +372,39 @@ class Monitor:
                     self.ready.pop(record["id"], None)
                     continue
                 try:
-                    inspected = self.docker.inspect(record["id"])
+                    inspected = inspect(record["id"])
+                    runtime = inspected.get("State") or {}
+                    self.set_diagnostic(record, docker_error=runtime.get("Error", ""),
+                                        exit_code=runtime.get("ExitCode"), oom_killed=bool(runtime.get("OOMKilled")))
                     if inspected.get("State", {}).get("Status") not in ("created", "exited"):
                         self.ready.pop(record["id"], None)
                         continue
                     if (inspected.get("HostConfig") or {}).get("AutoRemove"):
                         self.set_diagnostic(record, "protected", "Tarefa com remoção automática; recuperação ignorada.")
                         continue
-                    mounts = storage.read_mounts()
-                    signature = tuple(storage.probe_path(path, mounts, exact_mount=True) for path in storage.REQUIRED)
-                    signature += tuple(storage.probe_path(path, mounts) for path in storage.data_sources(inspected, self.docker))
+                    if (record["stack_key"], record["service"]) in completed_services and runtime.get("Status") == "exited" and runtime.get("ExitCode") == 0:
+                        self.ready.pop(record["id"], None)
+                        self.set_diagnostic(record, "completed", "Tarefa já concluída com sucesso; aguardada pela stack sem executar novamente.")
+                        continue
+                    signature, paths, errors = self.storage_status(inspected)
+                    self.set_diagnostic(record, paths=paths)
+                    if errors:
+                        self.ready.pop(record["id"], None)
+                        message = "Armazenamento indisponível: " + "; ".join(errors)
+                        self.set_diagnostic(record, "waiting_disk", message)
+                        self.event(record["name"] + ": " + message, "warning", record["name"], record["id"])
+                        continue
                     timer = time.monotonic()
                     previous = self.ready.get(record["id"])
                     if not previous or previous[0] != signature:
                         self.ready[record["id"]] = (signature, timer)
+                    dependencies, errors = self.dependency_status(record, records, inspect)
+                    self.set_diagnostic(record, dependencies=dependencies)
+                    if errors:
+                        message = "Aguardando dependências: " + "; ".join(errors)
+                        self.set_diagnostic(record, "waiting_dependency", message)
+                        self.event(record["name"] + ": " + message, "warning", record["name"], record["id"])
+                        continue
                     if timer - self.ready[record["id"]][1] < config["settings"]["stable_seconds"]:
                         self.set_diagnostic(record, "stabilizing", "Disco disponível. Aguardando estabilidade antes de iniciar.")
                         continue
@@ -280,6 +415,7 @@ class Monitor:
                         continue
                     self.set_diagnostic(record, "starting", "Solicitando início ao Docker…", attempt=True)
                     self.docker.start(record["id"])
+                    inspected_cache.pop(record["id"], None)
                     self.ready.pop(record["id"], None)
                     self.set_diagnostic(record, "requested", "Início solicitado. Aguardando confirmação do estado.")
                     self.event("Início solicitado para " + record["name"] + ".", name=record["name"], key=record["id"])
@@ -288,9 +424,8 @@ class Monitor:
                 except Exception as error:
                     self.ready.pop(record["id"], None)
                     message = str(error)
-                    stage = "waiting_disk" if isinstance(error, OSError) else "error"
-                    self.set_diagnostic(record, stage, message)
-                    self.event(record["name"] + ": " + message, "warning" if stage == "waiting_disk" else "error", record["name"], record["id"])
+                    self.set_diagnostic(record, "error", message)
+                    self.event(record["name"] + ": " + message, "error", record["name"], record["id"])
         finally:
             with self.lock:
                 self.scanning = False
@@ -445,7 +580,7 @@ class Handler(BaseHTTPRequestHandler):
             if session is None:
                 token, session = self.server.sessions.create()
             self.reply(200, {"authenticated": session["authenticated"], "setup_required": self.server.store.snapshot()["auth"] is None, "csrf": session["csrf"], "version": VERSION, "server_name": SERVER_NAME}, cookie=token)
-        elif path == "/api/state":
+        elif path in ("/api/state", "/api/diagnostics"):
             session = self.server.sessions.get(self.cookie_token())
             if not session or not session["authenticated"]:
                 self.reply(401, {"error": "Entre no painel para continuar."})
