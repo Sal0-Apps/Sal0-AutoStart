@@ -12,9 +12,11 @@ http://IP_DO_SERVIDOR:8788
 
 Crie uma senha na primeira abertura. Se você já usa o AutoStart anterior, atualize o mesmo aplicativo/Stack com este Compose. O nome do contêiner e o volume `auto-iniciar-containers-config` foram preservados: mantenha esse volume para conservar senha, escolhas e tempos.
 
+O Compose inclui os metadados `x-casaos` para exibir **Sal0 AutoStart**, o ícone do aplicativo e o atalho do painel no ZimaOS/CasaOS. O ícone também está na label `icon` do contêiner.
+
 A imagem é `ghcr.io/sal0-apps/sal0-autostart:latest`. A versão publicada também recebe uma tag fixa igual ao arquivo [`VERSION`](VERSION). O fluxo de publicação constrói a imagem, executa os testes e um teste real com Docker antes do envio ao registro. Plataforma: `linux/amd64`.
 
-Se a porta 8788 já estiver ocupada, altere somente o primeiro número do mapeamento, por exemplo `8789:8788`. Não é necessário abrir portas no roteador para usar pela rede local ou VPN.
+Se a porta 8788 já estiver ocupada, altere somente o primeiro número do mapeamento, por exemplo `8789:8788`, e ajuste `x-casaos.port_map` para `"8789"` para manter o atalho correto. Não é necessário abrir portas no roteador para usar pela rede local ou VPN.
 
 ## O que você controla
 

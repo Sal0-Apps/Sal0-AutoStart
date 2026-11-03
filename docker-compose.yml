@@ -1,3 +1,5 @@
+name: sal0-autostart
+
 services:
   auto-iniciar-containers:
     image: ghcr.io/sal0-apps/sal0-autostart:latest
@@ -36,6 +38,7 @@ services:
     stop_grace_period: 10s
     labels:
       autostart.ignore: "true"
+      icon: https://raw.githubusercontent.com/Sal0-Apps/Sal0-AutoStart/main/assets/icon.svg
     logging:
       driver: json-file
       options:
@@ -45,3 +48,28 @@ services:
 volumes:
   autostart-config:
     name: auto-iniciar-containers-config
+
+x-casaos:
+  id: io.github.sal0-apps.sal0-autostart
+  main: auto-iniciar-containers
+  title:
+    en_US: Sal0 AutoStart
+    pt_BR: Sal0 AutoStart
+  icon: https://raw.githubusercontent.com/Sal0-Apps/Sal0-AutoStart/main/assets/icon.svg
+  port_map: "8788"
+  scheme: http
+  index: /
+  author: Sal0 Apps
+  developer: Sal0 Apps
+  category: Developer
+  architectures:
+    - amd64
+  version: "2.1.0"
+  tagline:
+    en_US: Automatic recovery for your Docker containers
+    pt_BR: Recuperação automática dos seus contêineres Docker
+  description:
+    en_US: Choose containers and Compose stacks to start automatically when their disks are available after a server restart.
+    pt_BR: Escolha os contêineres e stacks Compose que devem iniciar automaticamente quando os discos estiverem disponíveis após reiniciar o servidor.
+  website: https://github.com/Sal0-Apps/Sal0-AutoStart
+  repo: https://github.com/Sal0-Apps/Sal0-AutoStart
