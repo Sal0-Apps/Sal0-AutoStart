@@ -25,6 +25,7 @@ body{background:radial-gradient(circle at 50% -20%,#49aeef21,transparent 42%),va
 @media(max-width:900px){.container-row{grid-template-columns:minmax(150px,1.1fr) minmax(140px,1fr) 110px;padding-left:22px}.monitor-buttons{gap:6px}.monitor-buttons .button{padding:9px 10px;font-size:11px}.stat{padding:15px}.stat-top{font-size:11px}}
 @media(max-width:760px){.shell{width:calc(100% - 24px);margin-top:12px}.app-header{padding:13px 14px;gap:10px;margin-bottom:12px}.brand-name{font-size:19px}.brand-sub{font-size:9px}.header-actions{gap:5px}.header-actions .connection{display:none}.header-actions .icon-button{width:40px;height:40px;min-height:40px}.brand{gap:9px}.nav{gap:4px;margin-bottom:18px}.nav button{padding:10px 6px;font-size:12px;min-height:44px}.nav .nav-count{display:none}.main{padding:0}.topbar{margin-bottom:17px}h1{font-size:22px}.stats{gap:9px}.stat{padding:14px}.stat-top{font-size:11px}.stat-value{font-size:26px}.stat-foot{font-size:10px}.monitor-strip{display:block;padding:15px}.monitor-buttons{margin:13px 0 0 0;display:flex;flex-direction:row}.monitor-buttons .button{width:auto;min-height:42px;padding:9px 13px;font-size:12px}.monitor-title{font-size:13px}.monitor-detail{font-size:11px}.toolbar select{width:134px;font-size:11px}.search input{font-size:12px}.container-row{grid-template-columns:minmax(0,1fr) 102px;padding:14px;gap:8px}.container-state{padding-left:35px}.container-name{font-size:12px}.image{font-size:9px}.runtime,.row-reason{font-size:11px}.policy-copy{font-size:11px}.policy-copy small{font-size:9px}.stack-head{padding:13px}.stack-title strong{font-size:13px}.stack-meta{font-size:10px}.stack-control>span{display:none}.switch{min-width:44px;min-height:44px}.switch-track:after{top:15.5px}.switch input:indeterminate+.switch-track:after{top:20.5px}.row-details{font-size:10px}.settings-card{padding:19px}.settings-row h3{font-size:13px}.settings-row p{font-size:12px}.footer{font-size:10px}.note{font-size:11px}}
 @media(max-width:420px){.nav button svg{display:none}.nav button{font-size:12px}.logo{width:34px;height:34px}.brand-name{font-size:18px}}
+.monitor-buttons{flex-wrap:wrap}.details-button+[data-start]{margin-left:12px}.monitor-strip{align-items:flex-start}@media(max-width:1100px){.monitor-strip{flex-wrap:wrap}}@media(max-width:760px){.monitor-buttons .button{flex:1 1 auto}.monitor-buttons{flex-wrap:wrap}}
 </style>
 </head>
 <body>
@@ -54,7 +55,7 @@ body{background:radial-gradient(circle at 50% -20%,#49aeef21,transparent 42%),va
     <button type="button" data-view="settings"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="8" cy="7" r="3" fill="var(--panel)"/><circle cx="16" cy="17" r="3" fill="var(--panel)"/></svg>Configurações</button>
   </nav>
   <main class="main">
-    <div class="topbar"><div class="crumb"><span data-server-name>Servidor Docker</span><span>/</span><strong id="breadcrumb">Contêineres</strong></div><span class="version" id="app-version">v2.2.0</span></div>
+    <div class="topbar"><div class="crumb"><span data-server-name>Servidor Docker</span><span>/</span><strong id="breadcrumb">Contêineres</strong></div><span class="version" id="app-version">v2.3.0</span></div>
     <div id="error-banner" class="error-banner" role="alert" hidden></div>
     <section id="overview-view">
       <div class="page-head"><div><p class="eyebrow">RECUPERAÇÃO AUTOMÁTICA</p><h1>Recuperação de contêineres</h1><p class="subtitle">Escolha quais serviços devem voltar ao ar quando o armazenamento estiver disponível.</p></div></div>
@@ -112,11 +113,16 @@ try{setTheme(localStorage.getItem('autostart.theme')||(matchMedia('(prefers-colo
 
 function toast(message,error=false){clearTimeout(toastTimer);el('toast').textContent=message;el('toast').className='toast'+(error?' error':'');el('toast').hidden=false;toastTimer=setTimeout(()=>el('toast').hidden=true,4500);}
 
-async function request(path,body){
+async function request(path,body,retry=true){
   const options={credentials:'same-origin',cache:'no-store',headers:{}};
   if(body!==undefined){options.method='POST';options.headers['Content-Type']='application/json';options.headers['X-CSRF-Token']=csrf;options.body=JSON.stringify(body);}
   const response=await fetch(path,options);
   const result=await response.json();
+  if(!response.ok&&retry&&body!==undefined&&result.code==='session_expired'){
+    const refreshed=await request('/api/session');csrf=refreshed.csrf;
+    if(refreshed.authenticated)return request(path,body,false);
+    const error=new Error('Entre no painel para continuar.');error.status=401;throw error;
+  }
   if(!response.ok){const error=new Error(result.error||'Falha ao comunicar com o painel.');error.status=response.status;throw error;}
   return result;
 }
@@ -134,19 +140,21 @@ function showAuth(session){
 function updateServerInfo(data){
   if(data.server_name){for(const element of document.querySelectorAll('[data-server-name]'))element.textContent=data.server_name;document.title='Sal0 AutoStart · '+data.server_name;}
   if(data.version)el('app-version').textContent='v'+data.version;
+  if(typeof data.auth_required==='boolean')el('logout').hidden=!data.auth_required;
 }
 
 async function session(){
   try{const result=await request('/api/session');updateServerInfo(result);csrf=result.csrf;if(result.authenticated){authenticated=true;el('auth').hidden=true;el('app').hidden=false;await refresh();}else{showAuth(result);}}
-  catch(error){el('auth-title').textContent='Não foi possível conectar.';el('auth-description').textContent='Verifique se o aplicativo está em execução e atualize esta página.';el('auth-error').textContent=error.message;}
+  catch(error){el('auth-title').textContent='Aguardando o painel…';el('auth-description').textContent='Vou tentar conectar novamente em alguns segundos.';el('auth-error').textContent=error.message;setTimeout(()=>{if(!authenticated)session();},3000);}
 }
 
 function reason(record){
   if(record.blocked)return record.blocked;
-  if(!record.enabled)return 'Fora da recuperação automática';
   if(record.state==='running'&&record.health==='unhealthy')return 'Contêiner ativo, mas o teste de saúde falhou. Consulte os registros do serviço.';
   if(record.state==='running'&&record.health==='starting')return 'Contêiner ativo. Aguardando o teste de saúde da aplicação.';
   if(record.state==='running')return record.health==='healthy'?'Contêiner ativo e teste de saúde aprovado':'Contêiner ativo; sem teste de saúde informado pelo Docker';
+  if(record.manual_pending)return 'Partida manual · '+(record.diagnostic.message||'aguardando a próxima tentativa');
+  if(!record.enabled)return 'Fora da recuperação automática';
   if(state.settings.paused)return 'Recuperação automática pausada';
   if(record.state==='restarting')return 'O Docker está reiniciando este contêiner. O AutoStart retenta se ele ficar parado.';
   if(!['created','exited'].includes(record.state))return 'O monitor atua quando o contêiner está parado';
@@ -158,13 +166,14 @@ function toggle(scope,key,checked,disabled,label,mixed=false){
 }
 
 function row(record){
-  const diagnostic=record.diagnostic||{}, warning=record.health==='unhealthy'||record.enabled&&record.state!=='running'&&['waiting_disk','waiting_dependency','error'].includes(diagnostic.stage), expanded=expandedRows.has(record.id);
+  const diagnostic=record.diagnostic||{}, warning=record.health==='unhealthy'||(record.enabled||record.manual_pending)&&record.state!=='running'&&['waiting_disk','waiting_dependency','error'].includes(diagnostic.stage), expanded=expandedRows.has(record.id);
   const sources={container:'Individual',stack:'Da stack',default:'Do padrão',protected:'Protegido'};
   const badge=record.state==='running'&&record.health==='unhealthy'?'Ativo · falha de saúde':stateNames[record.state]||record.state;
   const paths=(diagnostic.paths||[]).map(path=>'<span>'+esc(path.ready?'Disponível: ':'Aguardando: ')+esc(path.source)+(path.ready?'':' · '+esc(path.message))+'</span>').join('');
   const dependencies=(diagnostic.dependencies||[]).map(dependency=>'<span>'+esc(dependency.ready?'Dependência pronta: ':'Aguardando dependência: ')+esc(dependency.name||dependency.service)+' · '+esc(dependency.health||dependency.state)+'</span>').join('');
   const details=expanded?'<div class="row-details"><span>ID: '+esc(record.id.slice(0,12))+'</span>'+(record.service?'<span>Serviço: '+esc(record.service)+'</span>':'')+'<span>Tentativas nesta execução: '+(diagnostic.attempts||0)+'</span><span>Última tentativa: '+clock(diagnostic.last_attempt)+'</span><span>'+esc(record.status)+'</span>'+(diagnostic.oom_killed?'<span>Última execução encerrada por falta de memória (OOM).</span>':'')+(diagnostic.exit_code?'<span>Código da última saída: '+esc(diagnostic.exit_code)+'</span>':'')+(diagnostic.docker_error?'<span>Erro do Docker: '+esc(diagnostic.docker_error)+'</span>':'')+paths+dependencies+'</div>':'';
-  return '<div class="container-row"><div class="container-id"><div class="app-icon">'+esc(record.name.slice(0,2).toUpperCase())+'</div><div style="min-width:0"><div class="container-name">'+esc(record.name)+'</div><div class="image" title="'+esc(record.image)+'">'+esc(record.image||'Imagem não informada')+'</div></div></div><div class="container-state"><div class="runtime '+esc(record.state)+'"><span class="dot"></span>'+esc(badge)+'</div><p class="row-reason'+(warning?' warning':'')+'">'+esc(reason(record))+'</p><button class="details-button" type="button" data-detail="'+esc(record.id)+'" aria-expanded="'+expanded+'">'+(expanded?'Ocultar detalhes':'Detalhes')+'</button></div><div class="container-policy"><div class="policy-copy'+(record.enabled?' enabled':'')+'">'+(record.blocked?'Protegido':record.enabled?'Recuperar':'Ignorar')+'<small>'+sources[record.policy_source]+'</small></div>'+toggle('container',record.key,record.enabled,Boolean(record.blocked),'Recuperação de '+record.name)+'</div>'+details+'</div>';
+  const start=!record.blocked&&['created','exited'].includes(record.state)?'<button class="details-button" type="button" data-start="container" data-start-key="'+esc(record.key)+'" '+(busy?'disabled':'')+'>Iniciar</button>':'';
+  return '<div class="container-row"><div class="container-id"><div class="app-icon">'+esc(record.name.slice(0,2).toUpperCase())+'</div><div style="min-width:0"><div class="container-name">'+esc(record.name)+'</div><div class="image" title="'+esc(record.image)+'">'+esc(record.image||'Imagem não informada')+'</div></div></div><div class="container-state"><div class="runtime '+esc(record.state)+'"><span class="dot"></span>'+esc(badge)+'</div><p class="row-reason'+(warning?' warning':'')+'">'+esc(reason(record))+'</p><button class="details-button" type="button" data-detail="'+esc(record.id)+'" aria-expanded="'+expanded+'">'+(expanded?'Ocultar detalhes':'Detalhes')+'</button>'+start+'</div><div class="container-policy"><div class="policy-copy'+(record.enabled?' enabled':'')+'">'+(record.blocked?'Protegido':record.enabled?'Recuperar':'Ignorar')+'<small>'+sources[record.policy_source]+'</small></div>'+toggle('container',record.key,record.enabled,Boolean(record.blocked),'Recuperação de '+record.name)+'</div>'+details+'</div>';
 }
 
 function renderStats(){
@@ -177,8 +186,9 @@ function renderStats(){
 }
 
 function renderMonitor(){
-  const paused=state.settings.paused, scanning=state.scanning;
-  el('monitor-strip').innerHTML='<div class="monitor-info"><div class="monitor-symbol">'+(paused?icons.pause:icons.shield)+'</div><div><div class="monitor-title">'+(paused?'Recuperação pausada':scanning?'Verificando seus serviços…':'Monitoramento ativo')+'<span class="dot" style="'+(paused?'background:var(--faint)':'')+'"></span></div><div class="monitor-detail">'+(paused?'Suas escolhas continuam salvas.':('Ciclo de '+state.settings.interval+'s · <span id="countdown"></span>'))+'</div></div></div><div class="monitor-buttons"><button class="button" type="button" id="pause-monitor" '+(busy?'disabled':'')+'>'+(paused?icons.play:icons.pause)+(paused?'Retomar':'Pausar')+'</button><button class="button primary" type="button" id="check-now" '+(busy||scanning||paused?'disabled':'')+'>'+icons.refresh+'Verificar agora</button></div>';
+  const paused=state.settings.paused, scanning=state.scanning, manual=state.manual||{}, stopped=state.containers.filter(r=>!r.blocked&&['created','exited'].includes(r.state)).length;
+  const progress=manual.requested_at?'<br>Última partida manual: '+(manual.started||0)+' iniciado(s) · '+(manual.pending||0)+' pendente(s)'+(manual.skipped?' · '+manual.skipped+' ignorado(s)':'')+(manual.failed?' · '+manual.failed+' não concluído(s)':''):'';
+  el('monitor-strip').innerHTML='<div class="monitor-info"><div class="monitor-symbol">'+(paused?icons.pause:icons.shield)+'</div><div><div class="monitor-title">'+(manual.pending?'Partida manual em andamento':paused?'Recuperação automática pausada':scanning?'Verificando seus serviços…':'Monitoramento ativo')+'<span class="dot" style="'+(paused?'background:var(--faint)':'')+'"></span></div><div class="monitor-detail">'+(paused?'O monitor automático está pausado.':('Ciclo de '+state.settings.interval+'s · <span id="countdown"></span>'))+progress+'</div></div></div><div class="monitor-buttons"><button class="button primary" type="button" data-start="all" '+(busy||!stopped?'disabled':'')+' title="Partida manual de todos os parados, inclusive aqueles com recuperação automática desativada.">'+icons.play+'Iniciar todos</button><button class="button" type="button" id="check-now" '+(busy||scanning||paused?'disabled':'')+'>'+icons.refresh+'Verificar agora</button><button class="button" type="button" id="pause-monitor" '+(busy?'disabled':'')+'>'+(paused?icons.play:icons.pause)+(paused?'Retomar':'Pausar')+'</button></div>';
   updateCountdown();
 }
 
@@ -187,7 +197,7 @@ function matches(record,query,filter){
   if(filter==='enabled')return record.enabled;
   if(filter==='disabled')return !record.enabled;
   if(filter==='stopped')return ['exited','created'].includes(record.state);
-  if(filter==='waiting')return record.enabled&&['waiting_disk','waiting_dependency'].includes(record.diagnostic.stage)&&['exited','created'].includes(record.state);
+  if(filter==='waiting')return (record.enabled||record.manual_pending)&&['waiting_disk','waiting_dependency'].includes(record.diagnostic.stage)&&['exited','created'].includes(record.state);
   if(filter==='running')return record.state==='running';
   return true;
 }
@@ -201,7 +211,7 @@ function renderStacks(){
     const eligible=records.filter(record=>!record.blocked),enabled=eligible.filter(record=>record.enabled).length,partial=enabled>0&&enabled<eligible.length,closed=collapsed.has(key);
     const summary=eligible.length?(enabled+' de '+eligible.length+' com recuperação'):'Gerenciamento externo';
     const chevron=icons.chevron.replace('class="chevron"','class="chevron'+(closed?' collapsed':'')+'"');
-    html+='<section class="stack"><header class="stack-head"><div class="stack-left"><button class="fold-button" data-fold="'+esc(key)+'" type="button" aria-expanded="'+(!closed)+'" aria-label="'+esc((closed?'Expandir ':'Recolher ')+records[0].stack)+'">'+chevron+'<span class="stack-icon">'+(key==='standalone'?icons.cube:icons.layers)+'</span><span><span class="stack-title"><strong>'+esc(records[0].stack)+'</strong><span class="count-badge">'+records.length+'</span></span><span class="stack-meta">'+summary+'</span></span></button></div><div class="stack-control"><span>Stack inteira</span>'+toggle('stack',key,enabled>0,eligible.length===0,'Recuperação da stack '+records[0].stack,partial)+'</div></header>'+(closed?'':visible.map(row).join(''))+'</section>';
+    html+='<section class="stack"><header class="stack-head"><div class="stack-left"><button class="fold-button" data-fold="'+esc(key)+'" type="button" aria-expanded="'+(!closed)+'" aria-label="'+esc((closed?'Expandir ':'Recolher ')+records[0].stack)+'">'+chevron+'<span class="stack-icon">'+(key==='standalone'?icons.cube:icons.layers)+'</span><span><span class="stack-title"><strong>'+esc(records[0].stack)+'</strong><span class="count-badge">'+records.length+'</span></span><span class="stack-meta">'+summary+'</span></span></button></div><div class="stack-control"><button class="button" type="button" data-start="stack" data-start-key="'+esc(key)+'" '+(busy||!eligible.some(record=>['created','exited'].includes(record.state))?'disabled':'')+'>Iniciar</button><span>Stack inteira</span>'+toggle('stack',key,enabled>0,eligible.length===0,'Recuperação da stack '+records[0].stack,partial)+'</div></header>'+(closed?'':visible.map(row).join(''))+'</section>';
   }
   if(!html){html='<div class="empty">'+icons.cube+'<h3>'+(state.last_inventory?'Nenhum contêiner encontrado':'Descobrindo seus contêineres…')+'</h3><p>'+(state.last_inventory?'Ajuste a busca ou o filtro para ver os serviços.':'A lista aparecerá assim que o Docker estiver disponível.')+'</p></div>';}
   el('stack-list').innerHTML=html;
@@ -256,6 +266,7 @@ el('logout').addEventListener('click',async()=>{try{await request('/api/logout',
 document.addEventListener('click',async event=>{
   const fold=event.target.closest('[data-fold]');if(fold){const key=fold.dataset.fold;collapsed.has(key)?collapsed.delete(key):collapsed.add(key);renderStacks();return;}
   const detail=event.target.closest('[data-detail]');if(detail){const id=detail.dataset.detail;expandedRows.has(id)?expandedRows.delete(id):expandedRows.add(id);renderStacks();return;}
+  const start=event.target.closest('[data-start]');if(start){await mutate('/api/start',{scope:start.dataset.start,key:start.dataset.startKey},'Partida manual solicitada. Acompanhe o resultado no painel.');return;}
   if(event.target.closest('#pause-monitor')&&state){await mutate('/api/settings',{revision:state.revision,settings:{paused:!state.settings.paused}},state.settings.paused?'Recuperação retomada.':'Recuperação pausada.');}
   if(event.target.closest('#check-now'))await mutate('/api/check',{},'Verificação solicitada.');
 });
@@ -286,7 +297,7 @@ el('settings-form').addEventListener('submit',async event=>{
 });
 
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refresh();});
-setInterval(()=>{if(document.visibilityState!=='hidden')refresh();},8000);
+setInterval(()=>{if(document.visibilityState!=='hidden')refresh();},3000);
 setInterval(updateCountdown,1000);
 session();
 </script>

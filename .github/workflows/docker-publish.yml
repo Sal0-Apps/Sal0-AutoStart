@@ -40,6 +40,11 @@ jobs:
           node tests/test_ui.cjs
           docker compose -f docker-compose.yml config -q
           docker compose -f docker-compose.yml -f compose.build.yml config -q
+      - name: Testar botoes e painel sem login em computador e celular
+        run: |
+          python -m pip install --disable-pip-version-check playwright
+          python -m playwright install --with-deps chromium
+          python tests/browser_smoke.py
       - id: version
         name: Ler versão
         run: |
@@ -87,3 +92,11 @@ jobs:
           name: Sal0-AutoStart-compose
           path: docker-compose.yml
           if-no-files-found: error
+      - name: Guardar verificacao visual
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sal0-AutoStart-interface
+          path: test-artifacts/*.png
+          if-no-files-found: ignore
+          retention-days: 3

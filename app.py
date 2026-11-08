@@ -15,11 +15,13 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
 import storage_guard as storage
+from storage_probe import ProbePool
 
-VERSION = Path(__file__).with_name("VERSION").read_text().strip() if Path(__file__).with_name("VERSION").is_file() else "2.2.0"
+VERSION = Path(__file__).with_name("VERSION").read_text().strip() if Path(__file__).with_name("VERSION").is_file() else "2.3.0"
 SERVER_NAME = os.getenv("SERVER_NAME", "Servidor Docker").strip()[:80] or "Servidor Docker"
 PORT = int(os.getenv("WEB_PORT", "8788"))
 CONFIG_DIR = Path(os.getenv("CONFIG_DIR", "/config"))
+AUTH_REQUIRED = os.getenv("AUTH_REQUIRED", "false").strip().lower() in ("true", "1", "yes")
 INDEX_HTML = None  # O empacotador injeta o HTML no Compose; no ZIP ele e um arquivo.
 
 
@@ -240,13 +242,49 @@ class Monitor:
         self.ready = {}
         self.messages = {}
         self.diagnostics = {}
+        self.probes = ProbePool()
+        self.manual_targets = {}
+        self.manual_report = {"total": 0, "started": 0, "skipped": 0, "failed": 0, "requested_at": None}
         self.started = now()
         self.last_inventory = None
         self.last_check = None
-        self.next_check = now() + store.snapshot()["settings"]["initial_delay"]
+        self.deadline = time.monotonic() + store.snapshot()["settings"]["initial_delay"]
         self.heartbeat = now()
         self.error = ""
         self.scanning = False
+
+    @property
+    def next_check(self):
+        return now() + max(0, self.deadline - time.monotonic())
+
+    def request_start(self, body):
+        scope, key = body.get("scope", "all"), body.get("key")
+        if scope not in ("all", "selected", "stack", "container"):
+            raise ValueError("Escolha de partida inválida.")
+        config = self.store.snapshot()
+        with self.lock:
+            candidates = [record for record in self.records if not record["blocked"] and record["state"] in ("created", "exited")]
+            if scope in ("stack", "container"):
+                field = "stack_key" if scope == "stack" else "key"
+                candidates = [record for record in candidates if record[field] == key]
+            elif scope == "selected":
+                candidates = [record for record in candidates if Store.enabled(record, config)[0]]
+            for record in candidates:
+                self.manual_targets[record["id"]] = time.monotonic() + 300
+            if candidates:
+                self.manual_report = {"total": len(self.manual_targets), "started": 0, "skipped": 0, "failed": 0, "requested_at": now()}
+        self.event("Partida manual solicitada para " + str(len(candidates)) + " contêiner(es) parado(s).", key="manual")
+        self.wake.set()
+
+    def finish_manual(self, cid, result):
+        with self.lock:
+            if cid in self.manual_targets:
+                self.manual_targets.pop(cid)
+                self.manual_report[result] += 1
+
+    def is_manual(self, cid):
+        with self.lock:
+            return cid in self.manual_targets
 
     def event(self, message, level="info", name="", key="global"):
         with self.lock:
@@ -273,6 +311,8 @@ class Monitor:
             present = {record["id"] for record in records}
             self.ready = {key: value for key, value in self.ready.items() if key in present}
             self.diagnostics = {key: value for key, value in self.diagnostics.items() if key in present}
+            for cid in set(self.manual_targets) - present:
+                self.finish_manual(cid, "skipped")
 
     def current_records(self):
         with self.lock:
@@ -293,20 +333,8 @@ class Monitor:
     def storage_status(self, inspected):
         checks = {path: False for path in storage.data_sources(inspected, self.docker)}
         checks.update({path: True for path in storage.REQUIRED})
-        try:
-            mounts = storage.read_mounts()
-        except (OSError, ValueError) as error:
-            return (), [{"source": path, "ready": False, "message": str(error)} for path in sorted(checks)], [str(error)]
-        signature, paths, errors = [], [], []
-        for path, exact in sorted(checks.items()):
-            try:
-                result = storage.probe_path(path, mounts, exact_mount=exact)
-                signature.append(result)
-                paths.append({"source": path, "resolved": result[0], "mount": result[4], "ready": True, "message": "Disponível"})
-            except OSError as error:
-                paths.append({"source": path, "ready": False, "message": str(error)})
-                errors.append(str(error))
-        return tuple(signature), paths, errors
+        result = self.probes.check(checks)
+        return tuple(tuple(part) for part in result["signature"]), result["paths"], result["errors"]
 
     def dependency_status(self, record, records, inspect):
         reports, errors = [], []
@@ -342,7 +370,9 @@ class Monitor:
                         explanation = {"starting": "teste de saúde em andamento", "unhealthy": "teste de saúde falhou"}.get(health, "sem teste de saúde" if condition == "service_healthy" else "condição ainda não atendida")
                     if condition not in ("service_healthy", "service_completed_successfully", "service_started", "running_or_healthy"):
                         explanation = "condição desconhecida: " + condition
-                    if not running and not enabled:
+                    if not running and self.is_manual(candidate["id"]):
+                        explanation += "; partida manual pendente"
+                    elif not running and not enabled:
                         explanation += "; recuperação desativada"
                     errors.append(candidate["name"] + " (" + explanation + ")")
         return reports, errors
@@ -368,7 +398,17 @@ class Monitor:
                     break
                 config = self.store.snapshot()
                 enabled, _ = Store.enabled(record, config)
-                if config["settings"]["paused"] or not enabled or record["state"] not in ("exited", "created"):
+                with self.lock:
+                    expires = self.manual_targets.get(record["id"])
+                if expires is not None and expires <= time.monotonic():
+                    self.finish_manual(record["id"], "failed")
+                    self.set_diagnostic(record, "error", "Partida manual não concluída em 5 minutos. Veja o motivo nos detalhes e tente novamente.")
+                manual = self.is_manual(record["id"])
+                if record["state"] not in ("exited", "created"):
+                    self.ready.pop(record["id"], None)
+                    self.finish_manual(record["id"], "started" if record["state"] == "running" else "skipped")
+                    continue
+                if record["blocked"] or not manual and (config["settings"]["paused"] or not enabled):
                     self.ready.pop(record["id"], None)
                     continue
                 try:
@@ -378,14 +418,18 @@ class Monitor:
                                         exit_code=runtime.get("ExitCode"), oom_killed=bool(runtime.get("OOMKilled")))
                     if inspected.get("State", {}).get("Status") not in ("created", "exited"):
                         self.ready.pop(record["id"], None)
+                        self.finish_manual(record["id"], "started" if runtime.get("Status") == "running" else "skipped")
                         continue
                     if (inspected.get("HostConfig") or {}).get("AutoRemove"):
                         self.set_diagnostic(record, "protected", "Tarefa com remoção automática; recuperação ignorada.")
+                        self.finish_manual(record["id"], "skipped")
                         continue
                     if (record["stack_key"], record["service"]) in completed_services and runtime.get("Status") == "exited" and runtime.get("ExitCode") == 0:
                         self.ready.pop(record["id"], None)
                         self.set_diagnostic(record, "completed", "Tarefa já concluída com sucesso; aguardada pela stack sem executar novamente.")
+                        self.finish_manual(record["id"], "skipped")
                         continue
+                    self.set_diagnostic(record, "checking_storage", "Verificando armazenamento…", paths=[], dependencies=[])
                     signature, paths, errors = self.storage_status(inspected)
                     self.set_diagnostic(record, paths=paths)
                     if errors:
@@ -405,31 +449,53 @@ class Monitor:
                         self.set_diagnostic(record, "waiting_dependency", message)
                         self.event(record["name"] + ": " + message, "warning", record["name"], record["id"])
                         continue
-                    if timer - self.ready[record["id"]][1] < config["settings"]["stable_seconds"]:
+                    if signature and not manual and timer - self.ready[record["id"]][1] < config["settings"]["stable_seconds"]:
                         self.set_diagnostic(record, "stabilizing", "Disco disponível. Aguardando estabilidade antes de iniciar.")
                         continue
                     # Revalida as escolhas imediatamente antes de solicitar a partida.
                     latest = self.store.snapshot()
-                    if latest["settings"]["paused"] or not Store.enabled(record, latest)[0]:
+                    if not self.is_manual(record["id"]) and (latest["settings"]["paused"] or not Store.enabled(record, latest)[0]):
                         self.ready.pop(record["id"], None)
                         continue
                     self.set_diagnostic(record, "starting", "Solicitando início ao Docker…", attempt=True)
                     self.docker.start(record["id"])
                     inspected_cache.pop(record["id"], None)
-                    self.ready.pop(record["id"], None)
-                    self.set_diagnostic(record, "requested", "Início solicitado. Aguardando confirmação do estado.")
-                    self.event("Início solicitado para " + record["name"] + ".", name=record["name"], key=record["id"])
+                    confirmed = inspect(record["id"])
+                    status = (confirmed.get("State") or {}).get("Status", "unknown")
+                    with self.lock:
+                        for current in self.records:
+                            if current["id"] == record["id"]:
+                                current.update(state=status, health=health_status(confirmed), status=status)
+                    if status == "running":
+                        self.ready.pop(record["id"], None)
+                        self.finish_manual(record["id"], "started")
+                        self.set_diagnostic(record, "running", "Início confirmado pelo Docker.")
+                        self.event("Início confirmado para " + record["name"] + ".", name=record["name"], key=record["id"])
+                    else:
+                        state = confirmed.get("State") or {}
+                        message = state.get("Error") or "Após a partida o contêiner ficou em " + status + " (saída " + str(state.get("ExitCode", "?")) + "). Nova tentativa automática."
+                        self.set_diagnostic(record, "error", message)
+                        self.event(record["name"] + ": " + message, "error", record["name"], record["id"])
                     if self.stop.wait(config["settings"]["start_gap"]):
                         break
                 except Exception as error:
-                    self.ready.pop(record["id"], None)
                     message = str(error)
                     self.set_diagnostic(record, "error", message)
                     self.event(record["name"] + ": " + message, "error", record["name"], record["id"])
         finally:
             with self.lock:
                 self.scanning = False
-                self.next_check = now() + self.store.snapshot()["settings"]["interval"]
+                settings = self.store.snapshot()["settings"]
+                delays = [settings["interval"]]
+                if self.manual_targets:
+                    delays.append(2)
+                if any(diagnostic.get("stage") == "waiting_dependency" for diagnostic in self.diagnostics.values()):
+                    delays.append(3)
+                for signature, since in self.ready.values():
+                    remaining = settings["stable_seconds"] - (time.monotonic() - since)
+                    if signature and remaining > 0:
+                        delays.append(remaining)
+                self.deadline = time.monotonic() + max(.2, min(delays))
                 self.heartbeat = now()
 
     def snapshot(self):
@@ -439,11 +505,13 @@ class Monitor:
             for record in records:
                 record["enabled"], record["policy_source"] = Store.enabled(record, config)
                 record["diagnostic"] = copy.deepcopy(self.diagnostics.get(record["id"], {}))
+                record["manual_pending"] = record["id"] in self.manual_targets
             return {
                 "version": VERSION, "server_name": SERVER_NAME, "revision": config["revision"], "settings": config["settings"],
                 "containers": records, "events": list(self.events), "error": self.error,
                 "last_inventory": self.last_inventory, "last_check": self.last_check,
                 "next_check": self.next_check, "scanning": self.scanning, "server_time": now(),
+                "manual": dict(self.manual_report, pending=len(self.manual_targets)),
                 "uptime": now() - self.started,
             }
 
@@ -456,22 +524,22 @@ class Monitor:
             self.wake.clear()
             if requested:
                 next_inventory = 0
-                self.next_check = now()
+                self.deadline = time.monotonic()
             try:
-                if now() >= next_inventory:
+                if time.monotonic() >= next_inventory:
                     self.discover()
-                    next_inventory = now() + 10
-                if now() >= self.next_check:
+                    next_inventory = time.monotonic() + 5
+                if time.monotonic() >= self.deadline:
                     self.scan()
                     self.discover()
-                    next_inventory = now() + 10
+                    next_inventory = time.monotonic() + 5
             except Exception as error:
                 with self.lock:
                     self.error = str(error)
-                    self.next_check = max(self.next_check, now() + 15)
-                next_inventory = now() + 10
+                    self.deadline = time.monotonic() + 3
+                next_inventory = time.monotonic() + 3
                 self.event("Aguardando Docker: " + str(error), "error", key="daemon")
-            self.wake.wait(1)
+            self.wake.wait(.5)
 
 
 class Sessions:
@@ -527,7 +595,7 @@ class PanelServer(ThreadingHTTPServer):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "Sal0AutoStart/2.1"
+    server_version = "Sal0AutoStart/" + VERSION
 
     def setup(self):
         super().setup()
@@ -578,11 +646,13 @@ class Handler(BaseHTTPRequestHandler):
             session = self.server.sessions.get(self.cookie_token())
             token = None
             if session is None:
-                token, session = self.server.sessions.create()
-            self.reply(200, {"authenticated": session["authenticated"], "setup_required": self.server.store.snapshot()["auth"] is None, "csrf": session["csrf"], "version": VERSION, "server_name": SERVER_NAME}, cookie=token)
+                token, session = self.server.sessions.create(authenticated=not AUTH_REQUIRED)
+            self.reply(200, {"authenticated": not AUTH_REQUIRED or session["authenticated"], "auth_required": AUTH_REQUIRED,
+                             "setup_required": AUTH_REQUIRED and self.server.store.snapshot()["auth"] is None,
+                             "csrf": session["csrf"], "version": VERSION, "server_name": SERVER_NAME}, cookie=token)
         elif path in ("/api/state", "/api/diagnostics"):
             session = self.server.sessions.get(self.cookie_token())
-            if not session or not session["authenticated"]:
+            if AUTH_REQUIRED and (not session or not session["authenticated"]):
                 self.reply(401, {"error": "Entre no painel para continuar."})
             else:
                 self.reply(200, self.server.monitor.snapshot())
@@ -599,7 +669,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             session = self.server.sessions.get(self.cookie_token())
             if not session or not hmac.compare_digest(self.headers.get("X-CSRF-Token", ""), session["csrf"]):
-                self.reply(403, {"error": "Sessão expirada. Atualize a página."})
+                self.reply(403, {"error": "Sessão expirada. Atualize a página.", "code": "session_expired"})
                 return
             if self.headers.get("Transfer-Encoding") or self.headers.get_content_type() != "application/json":
                 self.reply(415, {"error": "Envie os dados em JSON."})
@@ -613,6 +683,9 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError("Dados inválidos.")
             path = urlsplit(self.path).path
             if path in ("/api/setup", "/api/login"):
+                if not AUTH_REQUIRED:
+                    self.reply(400, {"error": "O painel está configurado para abrir sem senha."})
+                    return
                 ip = self.client_address[0]
                 if self.server.sessions.limited(ip):
                     self.reply(429, {"error": "Aguarde um minuto antes de tentar novamente."})
@@ -630,7 +703,7 @@ class Handler(BaseHTTPRequestHandler):
                 token, session = self.server.sessions.create(authenticated=True)
                 self.reply(200, {"ok": True, "csrf": session["csrf"]}, cookie=token)
                 return
-            if not session["authenticated"]:
+            if AUTH_REQUIRED and not session["authenticated"]:
                 self.reply(401, {"error": "Entre no painel para continuar."})
                 return
             if path == "/api/rules":
@@ -644,6 +717,8 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/api/check":
                 self.server.monitor.wake.set()
                 self.server.monitor.event("Verificação solicitada pelo painel.", key="check")
+            elif path == "/api/start":
+                self.server.monitor.request_start(body)
             elif path == "/api/logout":
                 with self.server.sessions.lock:
                     self.server.sessions.sessions.pop(self.cookie_token(), None)
@@ -684,6 +759,7 @@ def main():
         shutdown()
         server.server_close()
         worker.join(timeout=5)
+        monitor.probes.close()
 
 
 if __name__ == "__main__":

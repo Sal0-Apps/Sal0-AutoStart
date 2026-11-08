@@ -13,10 +13,12 @@ services:
       SERVER_NAME: VictorServer
       CONFIG_DIR: /config
       WEB_PORT: "8788"
-      CHECK_INTERVAL_SECONDS: "60"
-      INITIAL_DELAY_SECONDS: "45"
-      DISK_STABLE_SECONDS: "20"
-      START_GAP_SECONDS: "3"
+      AUTH_REQUIRED: "false"
+      CHECK_INTERVAL_SECONDS: "15"
+      INITIAL_DELAY_SECONDS: "10"
+      DISK_STABLE_SECONDS: "5"
+      START_GAP_SECONDS: "1"
+      STORAGE_PROBE_TIMEOUT_SECONDS: "5"
       REQUIRED_MOUNTS: '[]'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -64,7 +66,7 @@ x-casaos:
   category: Developer
   architectures:
     - amd64
-  version: "2.2.0"
+  version: "2.3.0"
   tagline:
     en_US: Automatic recovery for your Docker containers
     pt_BR: Recuperação automática dos seus contêineres Docker

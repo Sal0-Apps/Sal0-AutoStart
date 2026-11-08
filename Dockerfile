@@ -1,6 +1,6 @@
 FROM python:3.13-alpine
 
-ARG VERSION=2.2.0
+ARG VERSION=2.3.0
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.title="Sal0 AutoStart" \
       org.opencontainers.image.description="Recuperacao automatica de conteineres com painel local para Docker e ZimaOS" \
@@ -13,7 +13,7 @@ ENV PYTHONUNBUFFERED=1 \
     CONFIG_DIR=/config \
     WEB_PORT=8788
 WORKDIR /app
-COPY app.py storage_guard.py index.html VERSION ./
+COPY app.py storage_guard.py storage_probe.py index.html VERSION ./
 COPY assets/icon.svg ./assets/icon.svg
 RUN mkdir -p /config
 EXPOSE 8788

@@ -10,7 +10,7 @@ Importe [`docker-compose.yml`](docker-compose.yml) como aplicativo personalizado
 http://IP_DO_SERVIDOR:8788
 ```
 
-Crie uma senha na primeira abertura. Se você já usa o AutoStart anterior, atualize o mesmo aplicativo/Stack com este Compose. O nome do contêiner e o volume `auto-iniciar-containers-config` foram preservados: mantenha esse volume para conservar senha, escolhas e tempos.
+O painel abre diretamente, sem pedir senha. Isso também vale ao atualizar uma instalação que já tinha senha. Para exigir autenticação, defina `AUTH_REQUIRED: "true"`; nesse modo você cria a senha na primeira abertura ou usa a senha já salva. Atualize o mesmo aplicativo/Stack e mantenha o volume `auto-iniciar-containers-config` para conservar suas escolhas e tempos.
 
 O Compose inclui os metadados `x-casaos` para exibir **Sal0 AutoStart**, o ícone do aplicativo e o atalho do painel no ZimaOS/CasaOS. O ícone também está na label `icon` do contêiner.
 
@@ -23,6 +23,8 @@ Se a porta 8788 já estiver ocupada, altere somente o primeiro número do mapeam
 - Recuperação da **stack inteira** ou de um contêiner individual.
 - Preferência para itens novos que ainda não têm uma escolha.
 - Pausa global e verificação imediata.
+- **Iniciar todos**: partida manual dos contêineres parados, incluindo os desmarcados para recuperação automática. Também funciona com o monitor automático pausado.
+- **Iniciar** no contêiner ou na stack para um pedido específico.
 - Intervalo de verificação, espera inicial, estabilidade do disco e pausa entre partidas.
 - Tema claro ou escuro, busca, filtros, estado dos contêineres e atividade do monitor.
 
@@ -30,7 +32,9 @@ As escolhas são salvas automaticamente. Uma escolha individual prevalece sobre 
 
 As regras acompanham projeto/serviço/réplica do Compose, ou o nome de um contêiner avulso. Trocar o ID durante uma atualização não apaga sua escolha; renomear projeto, serviço ou contêiner avulso cria uma identidade nova.
 
-**Desativar a recuperação não para o contêiner e não altera sua política `restart` do Docker.** A escolha controla apenas as tentativas deste monitor. Um contêiner selecionado que você parar manualmente será iniciado novamente; para manutenção, desative sua recuperação ou pause o monitor.
+**Desativar a recuperação não para o contêiner e não altera sua política `restart` do Docker.** A escolha controla as tentativas automáticas. Um contêiner selecionado que você parar manualmente será iniciado novamente; para manutenção, desative sua recuperação ou pause o monitor. O ciclo funciona em segundo plano, mesmo com o painel fechado e sem sessão de navegador.
+
+Uma partida manual respeita a disponibilidade dos discos e a ordem das dependências, mas dispensa a espera inicial e o tempo de estabilidade. O pedido retenta por até cinco minutos e mostra quantos iniciaram, quantos aguardam e quantos não concluíram. Ele preserva as escolhas de recuperação automática. A partida só é contada como iniciada depois de o Docker confirmar o contêiner em execução; uma aplicação que sai imediatamente mostra o erro/código de saída.
 
 ## Reconhecimento de stacks
 
@@ -46,6 +50,8 @@ O monitor trabalha com contêineres existentes; não recria stacks apagadas nem 
 
 O monitor confere os caminhos usados pelo contêiner, os links simbólicos do host e os pontos de montagem usuais do ZimaOS (`/media`, `/DATA`, `/DATA/.media`, `/var/lib/casaos_data/.media`, `/mnt` e `/run/media`). Uma pasta vazia no lugar de um HD nesses caminhos não é tratada como disco montado.
 
+A tabela de montagem visível em `/host` é usada junto à informação do host, pois o PID 1 pode enxergar outro namespace. Remontagens consideram a montagem superior, e um bind da coleção `/media` reconhece os discos montados dentro dela. Cada verificação roda em processo separado com limite de `STORAGE_PROBE_TIMEOUT_SECONDS` (padrão: 5 segundos); um disco ou FUSE travado não congela o ciclo inteiro. Contêineres sem caminhos de armazenamento podem iniciar sem aguardar essa checagem.
+
 Para um disco montado em outro caminho, configure `REQUIRED_MOUNTS` com uma lista JSON de pontos **exatos de montagem**, por exemplo:
 
 ```yaml
@@ -56,7 +62,7 @@ Esses pontos adicionais são exigidos para todos os contêineres selecionados. O
 
 O ZimaOS precisa reconhecer e montar o HD. O aplicativo não monta nem repara discos e não reinicia um serviço que já esteja usando uma pasta vazia. Se o armazenamento do próprio Docker estiver indisponível, o Docker precisa voltar a funcionar primeiro. Uma desconexão entre a checagem e a partida não pode ser evitada atomicamente pelo monitor.
 
-Os padrões iniciais são: espera de 45 segundos, ciclo de 60 segundos, estabilidade de 20 segundos e intervalo de 3 segundos entre partidas. A estabilidade é confirmada nos ciclos, podendo acrescentar um ciclo completo à espera. Depois da primeira partida, os tempos salvos pelo painel prevalecem sobre os valores iniciais do Compose.
+Os padrões iniciais são: espera de 10 segundos, ciclo de 15 segundos, estabilidade de 5 segundos e intervalo de 1 segundo entre partidas. As verificações antecipam o próximo ciclo quando precisam confirmar estabilidade ou dependências. O agendamento usa um relógio monotônico, de modo que um acerto de horário no boot não interrompe as tentativas. Depois da primeira partida, os tempos salvos pelo painel prevalecem sobre os valores iniciais do Compose.
 
 ## Configuração e diagnóstico
 
@@ -64,13 +70,13 @@ O volume `auto-iniciar-containers-config`, montado em `/config`, guarda senha e 
 
 Em **Detalhes**, veja cada caminho de armazenamento, as dependências, o último erro do Docker, o código de saída e um eventual encerramento por falta de memória. O painel diferencia contêiner ativo, saúde em verificação e falha de saúde; um processo ativo não garante que a aplicação esteja funcionando. Contêineres em execução ou reiniciando continuam sob responsabilidade do Docker: o AutoStart retoma as tentativas quando estiverem parados.
 
-Em **Atividade → Baixar diagnóstico**, exporte o inventário e os resultados das verificações em JSON. O relatório exige login e não inclui a configuração de autenticação do painel nem o ambiente dos contêineres. Em aplicativos com vários discos e bibliotecas externas, todos os caminhos precisam estar disponíveis; os caminhos pendentes aparecem individualmente, sem liberar a partida sobre uma pasta vazia.
+Em **Atividade → Baixar diagnóstico**, exporte o inventário e os resultados das verificações em JSON. O relatório não inclui a configuração de autenticação do painel nem o ambiente dos contêineres. Em aplicativos com vários discos e bibliotecas externas, todos os caminhos precisam estar disponíveis; os caminhos pendentes aparecem individualmente, sem liberar a partida sobre uma pasta vazia.
 
 ```bash
 docker logs --tail 100 auto-iniciar-containers
 ```
 
-O painel usa senha com hash PBKDF2 e sessão com cookie HttpOnly/SameSite; alterações exigem uma sessão e um token de proteção. Ele usa o socket Docker local para consultar e iniciar os contêineres. Use sua rede local ou VPN para acessar. Não publique esse painel diretamente na internet.
+O painel usa o socket Docker local para consultar e iniciar os contêineres. Use sua rede local ou VPN para acessar. Mesmo com o acesso sem senha, alterações usam cookie HttpOnly/SameSite e token CSRF, renovados automaticamente quando o aplicativo reinicia. No modo opcional com senha, o hash usa PBKDF2. Não publique esse painel diretamente na internet.
 
 Se esquecer a senha, siga a recuperação em [`docs/RECUPERAR-SENHA.md`](docs/RECUPERAR-SENHA.md). O nome exibido no painel pode ser alterado com `SERVER_NAME`; no Compose de exemplo é `VictorServer`.
 
@@ -83,6 +89,6 @@ python -m unittest discover -s tests -v
 docker compose -f docker-compose.yml -f compose.build.yml up -d --build
 ```
 
-O teste `tests/smoke_docker.py` é destinado a um runner Docker descartável: ele cria contêineres e um volume próprios, seleciona seus itens de teste, confirma seleção, persistência e espera por dependências com healthcheck, e remove somente esses recursos de teste.
+O teste `tests/smoke_docker.py` é destinado a um runner Docker descartável. Ele comprova a partida automática antes da primeira chamada HTTP, recupera uma nova parada e um reinício do monitor sem `/check`, verifica uma instalação antiga com senha, testa partida manual durante pausa e aguarda dependências com healthcheck sem um segundo clique. As partidas manuais são restritas às stacks criadas pelo teste. Os testes unitários incluem disco tardio, FUSE travado, relógio corrigido no boot, namespaces diferentes e preservação das escolhas.
 
 O aplicativo tem limites de 0,5 CPU e 160 MiB de RAM no Compose; esses valores são tetos, não reservas. A descoberta é atualizada a cada dez segundos e o painel lê o inventário em memória.

@@ -201,7 +201,8 @@ class MonitorTests(Base):
         self.assertEqual(result["diagnostic"]["attempts"], 1)
 
     def test_stability_and_recheck_of_choice_before_start(self):
-        docker = Docker(item("app"))
+        (self.host / "apps/data").mkdir(parents=True)
+        docker = Docker(item("app", source="/apps/data"))
         monitor = app.Monitor(self.store, docker)
         monitor.discover()
         self.settings(stable_seconds=20)
@@ -406,6 +407,9 @@ class MemorySocket:
 class HTTPTests(Base):
     def setUp(self):
         super().setUp()
+        self.auth_mode = patch.object(app, "AUTH_REQUIRED", True)
+        self.auth_mode.start()
+        self.addCleanup(self.auth_mode.stop)
         self.monitor = app.Monitor(self.store, Docker(item("app", "my-stack", "app")))
         self.monitor.discover()
         self.sessions = app.Sessions()
@@ -505,6 +509,50 @@ class HTTPTests(Base):
         self.assertEqual(report["containers"][0]["name"], "app")
         for private in ("auth", "digest", "salt", "DB_PASSWORD", "a-container-secret", "test-password"):
             self.assertNotIn('"' + private + '"' if private == "auth" else private, json.dumps(report))
+
+    @patch.object(app, "AUTH_REQUIRED", False)
+    def test_open_panel_skips_even_a_previously_configured_password(self):
+        self.store.setup_password("old-installation-password")
+        self.assertEqual(self.http("GET", "/api/state")[0], 200)
+        status, session, _ = self.http("GET", "/api/session")
+        self.assertEqual(status, 200)
+        self.assertTrue(session["authenticated"])
+        self.assertFalse(session["auth_required"])
+        self.assertFalse(session["setup_required"])
+        self.assertEqual(self.http("POST", "/api/check", {})[0], 200)
+
+    @patch.object(app, "AUTH_REQUIRED", False)
+    def test_open_panel_still_rejects_cross_site_and_missing_csrf(self):
+        self.assertEqual(self.http("POST", "/api/start", {"scope": "all"})[0], 403)
+        self.http("GET", "/api/session")
+        self.assertEqual(self.http("POST", "/api/start", {"scope": "all"}, csrf=False)[0], 403)
+        self.assertEqual(self.http("POST", "/api/start", {"scope": "all"}, origin="http://another-site")[0], 403)
+        self.assertEqual(self.monitor.snapshot()["manual"]["pending"], 0)
+
+    @patch.object(app, "AUTH_REQUIRED", False)
+    def test_manual_start_api_runs_while_paused_without_changing_choices(self):
+        record = self.monitor.records[0]
+        self.rule("container", record["key"], False, self.monitor.records)
+        self.settings(paused=True)
+        before = self.store.snapshot()
+        self.http("GET", "/api/session")
+        status, state, _ = self.http("POST", "/api/start", {"scope": "all"})
+        self.assertEqual(status, 200)
+        self.assertEqual(state["manual"]["pending"], 1)
+        self.monitor.scan()
+        self.assertEqual(self.monitor.docker.started, ["app-id"])
+        self.assertEqual(self.monitor.snapshot()["manual"]["started"], 1)
+        self.assertEqual(self.store.snapshot(), before)
+
+    @patch.object(app, "AUTH_REQUIRED", False)
+    def test_restart_renews_technical_session_without_login(self):
+        self.http("GET", "/api/session")
+        self.server.sessions = app.Sessions()
+        status, result, _ = self.http("POST", "/api/check", {})
+        self.assertEqual(status, 403)
+        self.assertEqual(result["code"], "session_expired")
+        self.assertTrue(self.http("GET", "/api/session")[1]["authenticated"])
+        self.assertEqual(self.http("POST", "/api/check", {})[0], 200)
 
 
 if __name__ == "__main__":

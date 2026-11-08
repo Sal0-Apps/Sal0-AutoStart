@@ -18,12 +18,13 @@ def names(value):
 
 
 STOP = threading.Event()
-INTERVAL = max(15, int(os.getenv("CHECK_INTERVAL_SECONDS", "60")))
-INITIAL_DELAY = max(0, int(os.getenv("INITIAL_DELAY_SECONDS", "45")))
-STABLE_SECONDS = max(0, int(os.getenv("DISK_STABLE_SECONDS", "20")))
-START_GAP = max(0, int(os.getenv("START_GAP_SECONDS", "3")))
+INTERVAL = max(15, int(os.getenv("CHECK_INTERVAL_SECONDS", "15")))
+INITIAL_DELAY = max(0, int(os.getenv("INITIAL_DELAY_SECONDS", "10")))
+STABLE_SECONDS = max(0, int(os.getenv("DISK_STABLE_SECONDS", "5")))
+START_GAP = max(0, int(os.getenv("START_GAP_SECONDS", "1")))
 HOST_ROOT = os.getenv("HOST_ROOT", "/host").rstrip("/")
 MOUNTINFO = os.getenv("HOST_MOUNTINFO", "/host-mountinfo")
+VIEW_MOUNTINFO = os.getenv("HOST_VIEW_MOUNTINFO", "/proc/self/mountinfo")
 IGNORE = names(os.getenv("IGNORE_CONTAINERS", "")) | {"auto-iniciar-containers"}
 ONLY = names(os.getenv("ONLY_CONTAINERS", ""))
 REQUIRED = json.loads(os.getenv("REQUIRED_MOUNTS", "[]"))
@@ -37,7 +38,7 @@ class DockerError(Exception):
 
 
 class UnixHTTP(http.client.HTTPConnection):
-    def __init__(self, timeout=120):
+    def __init__(self, timeout=15):
         super().__init__("localhost", timeout=timeout)
 
     def connect(self):
@@ -123,33 +124,67 @@ def unescape_mount(value):
     return re.sub(r"\\([0-7]{3})", lambda match: chr(int(match.group(1), 8)), value)
 
 
-def read_mounts():
+def parse_mounts(filename):
     mounts = []
-    with open(MOUNTINFO, encoding="utf-8") as source:
+    with open(filename, encoding="utf-8") as source:
         for line in source:
+            if not line.strip():
+                continue
             left, right = line.rstrip("\n").split(" - ", 1)
             fields, tail = left.split(), right.split()
             mounts.append({
-                "id": fields[0], "device": fields[2],
+                "id": fields[0], "parent": fields[1], "device": fields[2],
                 "root": unescape_mount(fields[3]), "target": unescape_mount(fields[4]),
                 "fs": tail[0], "source": unescape_mount(tail[1]),
             })
-    if not any(mount["target"] == "/" for mount in mounts):
-        raise OSError("tabela de montagens do host indisponivel")
     return mounts
+
+
+def read_mounts():
+    host, visible = [], []
+    try:
+        host = parse_mounts(MOUNTINFO)
+    except (OSError, ValueError, IndexError):
+        pass
+    try:
+        for mount in parse_mounts(VIEW_MOUNTINFO):
+            if within(mount["target"], HOST_ROOT):
+                mount = dict(mount, target=mount["target"][len(HOST_ROOT):] or "/", visible=True)
+                visible.append(mount)
+    except (OSError, ValueError, IndexError):
+        pass
+    if not any(mount["target"] == "/" for mount in visible):
+        visible = []
+    if not visible and not any(mount["target"] == "/" for mount in host):
+        raise OSError("tabela de montagens do host indisponivel")
+    # O PID 1 pode estar em outro namespace. A checagem usa a montagem que
+    # realmente esta visivel em /host, preservando a expectativa do host.
+    return host + visible
+
+
+def owning_mount(candidates):
+    length = max(len(mount["target"]) for mount in candidates)
+    stacked = [mount for mount in candidates if len(mount["target"]) == length]
+    parents = {mount.get("parent") for mount in stacked}
+    return next((mount for mount in reversed(stacked) if mount["id"] not in parents), stacked[-1])
 
 
 def probe_path(source, mounts, exact_mount=False):
     path = resolve_host(source)
-    candidates = [mount for mount in mounts if within(path, mount["target"])]
-    owner = max(candidates, key=lambda mount: len(mount["target"]))
+    visible = [mount for mount in mounts if mount.get("visible")]
+    candidates = [mount for mount in visible or mounts if within(path, mount["target"])]
+    owner = owning_mount(candidates)
+    expected = [mount for mount in mounts if not mount.get("visible") and within(path, mount["target"])]
+    if visible and expected and len(owning_mount(expected)["target"]) > len(owner["target"]):
+        raise OSError("aguardando montagem visivel no monitor: " + source)
     if exact_mount and owner["target"] != path:
         raise OSError("aguardando ponto de montagem: " + source)
     for prefix in PROTECTED:
         if within(path, prefix):
             suffix = path[len(prefix):].strip("/")
             boundary = prefix if prefix == "/DATA" or not suffix else prefix + "/" + suffix.split("/")[0]
-            if not within(owner["target"], boundary):
+            collection = path == prefix and any(mount["target"] != path and within(mount["target"], path) for mount in visible or mounts)
+            if not within(owner["target"], boundary) and owner["target"] != prefix and not collection:
                 raise OSError("aguardando disco montado: " + source)
             break
     status = os.stat(HOST_ROOT + path)
