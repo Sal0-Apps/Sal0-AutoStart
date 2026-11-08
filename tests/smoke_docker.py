@@ -4,6 +4,7 @@ import json
 import secrets
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -37,6 +38,7 @@ def main():
         prefix + suffix for suffix in ("-selected", "-excluded", "-monitor", "-z-database", "-y-redis", "-a-immich", "-protected", "-a-wait-disk"))
     volume = prefix + "-config"
     containers = [monitor, selected, excluded, server, redis, database, protected, blocked]
+    bind_directory = tempfile.TemporaryDirectory(prefix=prefix + "-bind-")
     opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
     csrf, origin = "", ""
 
@@ -68,7 +70,7 @@ def main():
         return "http://127.0.0.1:" + port
 
     try:
-        fixture(selected, "selected")
+        fixture(selected, "selected", bind=bind_directory.name)
         fixture(excluded, "excluded")
         fixture(protected, "protected", ignored=True)
         fixture(blocked, "disk-app", project=prefix + "-disk", bind="/media/" + prefix + "-missing-disk/app")
@@ -101,7 +103,8 @@ def main():
         state = request("/api/state")
         target = next(r for r in state["containers"] if r["name"] == selected)
         assert target["stack"] == prefix
-        assert next(r for r in state["containers"] if r["name"] == blocked)["diagnostic"]["stage"] == "waiting_disk"
+        wait_for(lambda: next(r for r in request("/api/state")["containers"] if r["name"] == blocked)["diagnostic"].get("stage") == "waiting_disk",
+                 "O disco ausente não recebeu diagnóstico de espera.")
         state = request("/api/settings", {"revision": state["revision"], "settings": {"paused": True}})
         # Somente a stack criada pelo teste recebe a partida manual.
         request("/api/start", {"scope": "stack", "key": target["stack_key"]})
@@ -157,7 +160,9 @@ def main():
         for name in containers:
             docker("rm", "-f", name, check=False)
         docker("volume", "rm", volume, check=False)
+        bind_directory.cleanup()
 
 
 if __name__ == "__main__":
     main()
+
