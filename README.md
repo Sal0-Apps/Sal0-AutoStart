@@ -12,7 +12,7 @@ http://IP_DO_SERVIDOR:8788
 
 O painel abre diretamente, sem pedir senha. Isso também vale ao atualizar uma instalação que já tinha senha. Para exigir autenticação, defina `AUTH_REQUIRED: "true"`; nesse modo você cria a senha na primeira abertura ou usa a senha já salva. Atualize o mesmo aplicativo/Stack e mantenha o volume `auto-iniciar-containers-config` para conservar suas escolhas e tempos.
 
-O Compose inclui os metadados `x-casaos` para exibir **Sal0 AutoStart**, o ícone do aplicativo e o atalho do painel no ZimaOS/CasaOS. O ícone também está na label `icon` do contêiner.
+O Compose inclui os metadados `x-casaos` para exibir **Sal0 AutoStart**, o ícone do aplicativo e o atalho do painel no ZimaOS/CasaOS. O ícone também está na label `icon` do contêiner. A arte segue o padrão Sal0: fundo azul-marinho, símbolo azul e sem moldura clara. O compose usa `assets/icon-512.png`; `assets/icon.svg` continua atualizado para instalações anteriores. Para renovar um ícone salvo pelo ZimaOS, atualize o campo Ícone nas configurações do aplicativo com a URL PNG do compose.
 
 A imagem é `ghcr.io/sal0-apps/sal0-autostart:latest`. A versão publicada também recebe uma tag fixa igual ao arquivo [`VERSION`](VERSION). O fluxo de publicação constrói a imagem, executa os testes e um teste real com Docker antes do envio ao registro. Plataforma: `linux/amd64`.
 

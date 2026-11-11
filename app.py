@@ -18,7 +18,7 @@ import storage_guard as storage
 from storage_probe import ProbePool
 from zima_catalog import AsyncAppCatalog, presentation
 
-VERSION = Path(__file__).with_name("VERSION").read_text().strip() if Path(__file__).with_name("VERSION").is_file() else "2.4.1"
+VERSION = Path(__file__).with_name("VERSION").read_text().strip() if Path(__file__).with_name("VERSION").is_file() else "2.4.2"
 SERVER_NAME = os.getenv("SERVER_NAME", "Servidor Docker").strip()[:80] or "Servidor Docker"
 PORT = int(os.getenv("WEB_PORT", "8788"))
 CONFIG_DIR = Path(os.getenv("CONFIG_DIR", "/config"))

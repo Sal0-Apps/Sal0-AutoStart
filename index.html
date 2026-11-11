@@ -27,12 +27,13 @@ body{background:radial-gradient(circle at 50% -20%,#49aeef21,transparent 42%),va
 @media(max-width:420px){.nav button svg{display:none}.nav button{font-size:12px}.logo{width:34px;height:34px}.brand-name{font-size:18px}}
 .monitor-buttons{flex-wrap:wrap}.details-button+[data-start]{margin-left:12px}.monitor-strip{align-items:flex-start}@media(max-width:1100px){.monitor-strip{flex-wrap:wrap}}@media(max-width:760px){.monitor-buttons .button{flex:1 1 auto}.monitor-buttons{flex-wrap:wrap}}
 .app-logo{position:relative;overflow:hidden}.app-logo img{position:absolute;object-fit:contain;width:24px;height:24px}.stack-icon.app-logo{width:42px;height:42px;border-radius:11px}.stack-icon.app-logo img{width:32px;height:32px}.logo-initials{font-size:11px;font-weight:650}.image-loaded>.logo-initials{visibility:hidden}.technical-name{font-size:10px;color:var(--muted);overflow-wrap:anywhere;margin-top:2px}.stack-meta{overflow-wrap:anywhere}.stack-title{flex-wrap:wrap;gap:5px}.fold-button>span:last-child{min-width:0}.stack-head{min-height:82px}.stack-control .button{flex:none}@media(max-width:480px){.stack-icon.app-logo{width:36px;height:36px;border-radius:9px}.stack-icon.app-logo img{width:28px;height:28px}.fold-button{gap:7px}.stack-head{gap:8px}.stack-left{min-width:0}.stack-title strong{font-size:12px}.stack-control{gap:7px}.technical-name{font-size:9px}}
+.logo{background:none;box-shadow:none;overflow:hidden}.logo img{width:100%;height:100%;display:block;object-fit:contain}
 </style>
 </head>
 <body>
 <div id="auth" class="auth">
   <form id="auth-form" class="auth-card">
-    <div class="auth-brand"><span class="logo"><svg viewBox="0 0 24 24"><path d="M12 3v8m-5-6a8 8 0 1 0 10 0"/></svg></span>Sal0 AutoStart</div>
+    <div class="auth-brand"><span class="logo"><img src="/icon.svg" width="36" height="36" alt=""></span>Sal0 AutoStart</div>
     <h1 id="auth-title">Conectando ao painel…</h1>
     <p id="auth-description">Carregando as informações do seu servidor.</p>
     <div id="auth-fields" hidden>
@@ -47,7 +48,7 @@ body{background:radial-gradient(circle at 50% -20%,#49aeef21,transparent 42%),va
 </div>
 <div class="shell" id="app" hidden>
   <header class="app-header">
-    <div class="brand"><span class="logo"><svg viewBox="0 0 24 24"><path d="M12 3v8m-5-6a8 8 0 1 0 10 0"/></svg></span><div><div class="brand-name">Sal0 AutoStart</div><div class="brand-sub">Sal0 Apps · Docker</div></div></div>
+    <div class="brand"><span class="logo"><img src="/icon.svg" width="36" height="36" alt=""></span><div><div class="brand-name">Sal0 AutoStart</div><div class="brand-sub">Sal0 Apps · Docker</div></div></div>
     <div class="header-actions"><span id="connection" class="connection"><span class="dot"></span>Conectado</span><button id="theme" class="icon-button" aria-label="Alternar tema" title="Alternar tema"></button><button id="logout" class="icon-button" aria-label="Sair do painel" title="Sair do painel"><svg viewBox="0 0 24 24"><path d="M10 4H5v16h5m4-12 4 4-4 4m-5-4h11"/></svg></button></div>
   </header>
   <nav class="nav" aria-label="Navegação principal">
@@ -56,7 +57,7 @@ body{background:radial-gradient(circle at 50% -20%,#49aeef21,transparent 42%),va
     <button type="button" data-view="settings"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="8" cy="7" r="3" fill="var(--panel)"/><circle cx="16" cy="17" r="3" fill="var(--panel)"/></svg>Configurações</button>
   </nav>
   <main class="main">
-    <div class="topbar"><div class="crumb"><span data-server-name>Servidor Docker</span><span>/</span><strong id="breadcrumb">Aplicativos</strong></div><span class="version" id="app-version">v2.4.1</span></div>
+    <div class="topbar"><div class="crumb"><span data-server-name>Servidor Docker</span><span>/</span><strong id="breadcrumb">Aplicativos</strong></div><span class="version" id="app-version">v2.4.2</span></div>
     <div id="error-banner" class="error-banner" role="alert" hidden></div>
     <section id="overview-view">
       <div class="page-head"><div><p class="eyebrow">RECUPERAÇÃO AUTOMÁTICA</p><h1>Recuperação de contêineres</h1><p class="subtitle">Escolha quais serviços devem voltar ao ar quando o armazenamento estiver disponível.</p></div></div>
