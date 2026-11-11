@@ -18,7 +18,7 @@ import storage_guard as storage
 from storage_probe import ProbePool
 from zima_catalog import AsyncAppCatalog, presentation
 
-VERSION = Path(__file__).with_name("VERSION").read_text().strip() if Path(__file__).with_name("VERSION").is_file() else "2.4.0"
+VERSION = Path(__file__).with_name("VERSION").read_text().strip() if Path(__file__).with_name("VERSION").is_file() else "2.4.1"
 SERVER_NAME = os.getenv("SERVER_NAME", "Servidor Docker").strip()[:80] or "Servidor Docker"
 PORT = int(os.getenv("WEB_PORT", "8788"))
 CONFIG_DIR = Path(os.getenv("CONFIG_DIR", "/config"))
@@ -235,7 +235,9 @@ class Monitor:
     def __init__(self, store, docker=None, catalog=None):
         self.store = store
         self.docker = docker or storage.Docker()
-        self.catalog = catalog or AsyncAppCatalog(os.getenv("SAL0_ZIMA_APPS", storage.HOST_ROOT + "/var/lib/casaos/apps"))
+        metadata_path = os.getenv("SAL0_ZIMA_APPS")
+        self.catalog = catalog or AsyncAppCatalog(metadata_path or storage.HOST_ROOT + "/var/lib/casaos/apps",
+                          directory_resolver=None if metadata_path else lambda: storage.HOST_ROOT + storage.resolve_host("/var/lib/casaos/apps"))
         self.apps = []
         self.catalog_status = {"available": False, "apps": 0}
         self.lock = threading.RLock()

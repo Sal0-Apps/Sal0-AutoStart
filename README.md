@@ -42,7 +42,7 @@ A partir da versão 2.4.0, os cartões mostram o nome personalizado e o ícone c
 
 A leitura usa `/host/var/lib/casaos/apps`, disponível pela montagem de leitura `/host` já presente no compose. A atualização da imagem funciona com o compose anterior. Para um caminho diferente, a variável opcional `SAL0_ZIMA_APPS` indica a pasta de aplicativos visível dentro do contêiner.
 
-A consulta de metadados roda em segundo plano: uma pasta lenta não bloqueia a recuperação dos contêineres. Só nomes, ícones, serviços e associação dos aplicativos são aproveitados; variáveis e credenciais dos composes não são enviadas ao navegador. Sem metadados, o painel usa os nomes e ícones das etiquetas Docker e, na falta de imagem, as iniciais.
+Links absolutos da pasta de aplicativos são resolvidos no host, dentro da montagem `/host`. A consulta de metadados roda em segundo plano: uma pasta lenta não bloqueia a recuperação dos contêineres. Só nomes, ícones, serviços e associação dos aplicativos são aproveitados; variáveis e credenciais dos composes não são enviadas ao navegador. Sem metadados, o painel usa os nomes e ícones das etiquetas Docker e, na falta de imagem, as iniciais.
 
 As identidades das regras e os limites das stacks de recuperação continuam baseados no Compose. Renomear um aplicativo no ZimaOS não apaga suas escolhas. Uma associação visual não une projetos Docker diferentes nem amplia o alcance do botão Iniciar ou da chave de recuperação.
 

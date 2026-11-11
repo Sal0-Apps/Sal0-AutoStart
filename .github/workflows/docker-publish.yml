@@ -18,6 +18,8 @@ jobs:
   test-and-publish:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -116,6 +118,7 @@ jobs:
       - name: Validar download público e revisão da imagem
         env:
           EXPECTED_REVISION: ${{ github.sha }}
+          EXPECTED_VERSION: ${{ needs.test-and-publish.outputs.version }}
         run: |
           docker pull ghcr.io/sal0-apps/sal0-autostart:latest
           python3 - <<'PY'
@@ -123,6 +126,8 @@ jobs:
           image='ghcr.io/sal0-apps/sal0-autostart:latest'
           data=json.loads(subprocess.check_output(['docker','image','inspect',image],text=True))[0]
           assert data['Config']['Labels']['org.opencontainers.image.revision']==os.environ['EXPECTED_REVISION']
-          subprocess.run(['docker','run','--rm','--entrypoint','python',image,'-c','import app,zima_catalog; assert app.VERSION == "2.4.0"; print("Public image OK: 2.4.0 with Zima names, icons and grouped stacks.")'],check=True)
+          version=os.environ['EXPECTED_VERSION']
+          assert data['Config']['Labels']['org.opencontainers.image.version']==version
+          subprocess.run(['docker','run','--rm','-e','EXPECTED_VERSION='+version,'--entrypoint','python',image,'-c','import app,zima_catalog,os; assert app.VERSION == os.environ["EXPECTED_VERSION"]; print("Public image OK: Zima names, icons and grouped stacks.")'],check=True)
           print('Anonymous latest pull and source revision verified.')
           PY

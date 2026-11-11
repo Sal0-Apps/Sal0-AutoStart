@@ -178,9 +178,10 @@ class AppCatalog:
 
 class AsyncAppCatalog(AppCatalog):
     """Metadata on a slow disk must never delay container recovery."""
-    def __init__(self, directory, ttl=15):
+    def __init__(self, directory, ttl=15, directory_resolver=None):
         super().__init__(directory, ttl)
         self.reader = AppCatalog(directory, ttl=0)
+        self.directory_resolver = directory_resolver
         self.cached = ([], False)
         self.refresh_lock = threading.Lock()
 
@@ -190,7 +191,11 @@ class AsyncAppCatalog(AppCatalog):
 
             def refresh():
                 try:
+                    if self.directory_resolver:
+                        self.reader.directory = Path(self.directory_resolver())
                     self.cached = self.reader.snapshot()
+                except (OSError, ValueError):
+                    self.cached = ([], False)
                 finally:
                     self.refresh_lock.release()
             threading.Thread(target=refresh, daemon=True).start()

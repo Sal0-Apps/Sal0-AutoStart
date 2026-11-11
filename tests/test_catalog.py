@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import yaml
 import app
+import storage_guard as storage
 from zima_catalog import AppCatalog, AsyncAppCatalog
 from test_app import Docker, item
 
@@ -29,6 +30,24 @@ def seed_catalog(root):
 
 
 class CatalogTests(unittest.TestCase):
+    def test_default_metadata_path_follows_absolute_host_symlinks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory);host = root / 'host'
+            (host / 'var/lib/casaos').mkdir(parents=True)
+            metadata = host / 'metadata/apps'
+            seed_catalog(metadata)
+            (host / 'var/lib/casaos/apps').symlink_to('/metadata/apps')
+            with patch.object(storage, 'HOST_ROOT', str(host)):
+                monitor = app.Monitor(app.Store(root / 'config'), Docker(item('jellyfin', 'jellyfin', 'jellyfin')))
+                deadline = time.monotonic() + 2
+                while time.monotonic() < deadline:
+                    monitor.discover()
+                    if monitor.snapshot()['apps'][0]['title'] == 'Cinema Victor':
+                        break
+                    time.sleep(.01)
+                self.assertEqual(monitor.snapshot()['apps'][0]['title'], 'Cinema Victor')
+                monitor.probes.close()
+
     def test_zima_names_icons_keep_rule_identities_and_saved_choices(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
