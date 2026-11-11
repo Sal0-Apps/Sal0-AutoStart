@@ -10,7 +10,7 @@ const declarations = ['esc', 'norm', 'clock', 'stateNames'].map(name => {
   assert.ok(line, 'Declaracao da interface ausente: ' + name);
   return line;
 });
-const functions = ['reason', 'toggle', 'row', 'matches', 'renderStats', 'renderMonitor', 'updateServerInfo'].map(name => {
+const functions = ['reason', 'toggle', 'picture', 'inventoryGroups', 'row', 'matches', 'renderStacks', 'renderStats', 'renderMonitor', 'updateServerInfo'].map(name => {
   const match = script.match(new RegExp('function ' + name + '\\([^]*?\\n\\}'));
   assert.ok(match, 'Funcao da interface ausente: ' + name);
   return match[0];
@@ -30,10 +30,10 @@ const database = record('immich-postgres', 'running', 'starting');
 const ml = record('immich-machine-learning', 'running', 'unhealthy');
 const state = {settings: {paused: false}, containers: [server, database, ml]};
 const context = {
-  state, expandedRows: new Set([server.id]), busy: false,
-  icons: {cube: '', play: '', shield: '', disk: ''},
+  state, expandedRows: new Set([server.id]), collapsed: new Set(), opened: new Set(), failedIcons: new Set(), busy: false,
+  icons: {cube: '', play: '', shield: '', disk: '', chevron: '<svg class="chevron"></svg>'},
   updateCountdown: () => {},
-  el: id => nodes[id] || (nodes[id] = {}),
+  el: id => nodes[id] || (nodes[id] = {querySelectorAll: () => []}),
 };
 vm.createContext(context);
 vm.runInContext(declarations.concat(functions).join('\n'), context);
@@ -65,6 +65,20 @@ assert.match(context.reason(server), /^Partida manual/);
 assert.match(context.row(server), /data-start="container"/);
 context.updateServerInfo({auth_required: false});
 assert.equal(nodes.logout.hidden, true);
+assert.ok(!context.picture('javascript:alert(1)', 'Example').includes('<img'));
+server.display_name='Servidor com nome';server.icon='https://example.org/icon.png';server.app_name='Fotos da Casa';
+assert.match(context.row(server), /Servidor com nome/);
+assert.match(context.row(server), /data-app-icon/);
+assert.equal(context.matches(server,'fotos da casa','all'),true);
+state.apps=[{id:'compose:immich',title:'Fotos da Casa',icon:server.icon,scope:'stack',key:'compose:immich',containers:[server.id,database.id,ml.id]}];
+nodes.search={value:''};nodes.filter={value:'all'};
+context.renderStacks();
+assert.match(nodes['stack-list'].innerHTML,/Fotos da Casa/);
+assert.match(nodes['stack-list'].innerHTML,/Expandir Fotos da Casa/);
+assert.ok(!nodes['stack-list'].innerHTML.includes('container-row'),'Stack should start collapsed');
+nodes.search.value='immich-postgres';context.renderStacks();
+assert.match(nodes['stack-list'].innerHTML,/immich-machine-learning/,'Search must keep stack context');
+assert.match(nodes['stack-list'].innerHTML,/Recolher Fotos da Casa/);
 
 async function sessionRetry() {
   const calls = [];

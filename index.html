@@ -26,6 +26,7 @@ body{background:radial-gradient(circle at 50% -20%,#49aeef21,transparent 42%),va
 @media(max-width:760px){.shell{width:calc(100% - 24px);margin-top:12px}.app-header{padding:13px 14px;gap:10px;margin-bottom:12px}.brand-name{font-size:19px}.brand-sub{font-size:9px}.header-actions{gap:5px}.header-actions .connection{display:none}.header-actions .icon-button{width:40px;height:40px;min-height:40px}.brand{gap:9px}.nav{gap:4px;margin-bottom:18px}.nav button{padding:10px 6px;font-size:12px;min-height:44px}.nav .nav-count{display:none}.main{padding:0}.topbar{margin-bottom:17px}h1{font-size:22px}.stats{gap:9px}.stat{padding:14px}.stat-top{font-size:11px}.stat-value{font-size:26px}.stat-foot{font-size:10px}.monitor-strip{display:block;padding:15px}.monitor-buttons{margin:13px 0 0 0;display:flex;flex-direction:row}.monitor-buttons .button{width:auto;min-height:42px;padding:9px 13px;font-size:12px}.monitor-title{font-size:13px}.monitor-detail{font-size:11px}.toolbar select{width:134px;font-size:11px}.search input{font-size:12px}.container-row{grid-template-columns:minmax(0,1fr) 102px;padding:14px;gap:8px}.container-state{padding-left:35px}.container-name{font-size:12px}.image{font-size:9px}.runtime,.row-reason{font-size:11px}.policy-copy{font-size:11px}.policy-copy small{font-size:9px}.stack-head{padding:13px}.stack-title strong{font-size:13px}.stack-meta{font-size:10px}.stack-control>span{display:none}.switch{min-width:44px;min-height:44px}.switch-track:after{top:15.5px}.switch input:indeterminate+.switch-track:after{top:20.5px}.row-details{font-size:10px}.settings-card{padding:19px}.settings-row h3{font-size:13px}.settings-row p{font-size:12px}.footer{font-size:10px}.note{font-size:11px}}
 @media(max-width:420px){.nav button svg{display:none}.nav button{font-size:12px}.logo{width:34px;height:34px}.brand-name{font-size:18px}}
 .monitor-buttons{flex-wrap:wrap}.details-button+[data-start]{margin-left:12px}.monitor-strip{align-items:flex-start}@media(max-width:1100px){.monitor-strip{flex-wrap:wrap}}@media(max-width:760px){.monitor-buttons .button{flex:1 1 auto}.monitor-buttons{flex-wrap:wrap}}
+.app-logo{position:relative;overflow:hidden}.app-logo img{position:absolute;object-fit:contain;width:24px;height:24px}.stack-icon.app-logo{width:42px;height:42px;border-radius:11px}.stack-icon.app-logo img{width:32px;height:32px}.logo-initials{font-size:11px;font-weight:650}.image-loaded>.logo-initials{visibility:hidden}.technical-name{font-size:10px;color:var(--muted);overflow-wrap:anywhere;margin-top:2px}.stack-meta{overflow-wrap:anywhere}.stack-title{flex-wrap:wrap;gap:5px}.fold-button>span:last-child{min-width:0}.stack-head{min-height:82px}.stack-control .button{flex:none}@media(max-width:480px){.stack-icon.app-logo{width:36px;height:36px;border-radius:9px}.stack-icon.app-logo img{width:28px;height:28px}.fold-button{gap:7px}.stack-head{gap:8px}.stack-left{min-width:0}.stack-title strong{font-size:12px}.stack-control{gap:7px}.technical-name{font-size:9px}}
 </style>
 </head>
 <body>
@@ -50,19 +51,19 @@ body{background:radial-gradient(circle at 50% -20%,#49aeef21,transparent 42%),va
     <div class="header-actions"><span id="connection" class="connection"><span class="dot"></span>Conectado</span><button id="theme" class="icon-button" aria-label="Alternar tema" title="Alternar tema"></button><button id="logout" class="icon-button" aria-label="Sair do painel" title="Sair do painel"><svg viewBox="0 0 24 24"><path d="M10 4H5v16h5m4-12 4 4-4 4m-5-4h11"/></svg></button></div>
   </header>
   <nav class="nav" aria-label="Navegação principal">
-    <button type="button" data-view="overview" class="active"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Contêineres<span id="nav-count" class="nav-count">—</span></button>
+    <button type="button" data-view="overview" class="active"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Aplicativos<span id="nav-count" class="nav-count">—</span></button>
     <button type="button" data-view="activity"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Atividade</button>
     <button type="button" data-view="settings"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="8" cy="7" r="3" fill="var(--panel)"/><circle cx="16" cy="17" r="3" fill="var(--panel)"/></svg>Configurações</button>
   </nav>
   <main class="main">
-    <div class="topbar"><div class="crumb"><span data-server-name>Servidor Docker</span><span>/</span><strong id="breadcrumb">Contêineres</strong></div><span class="version" id="app-version">v2.3.0</span></div>
+    <div class="topbar"><div class="crumb"><span data-server-name>Servidor Docker</span><span>/</span><strong id="breadcrumb">Aplicativos</strong></div><span class="version" id="app-version">v2.4.0</span></div>
     <div id="error-banner" class="error-banner" role="alert" hidden></div>
     <section id="overview-view">
       <div class="page-head"><div><p class="eyebrow">RECUPERAÇÃO AUTOMÁTICA</p><h1>Recuperação de contêineres</h1><p class="subtitle">Escolha quais serviços devem voltar ao ar quando o armazenamento estiver disponível.</p></div></div>
       <div id="stats" class="stats"></div>
       <div id="monitor-strip" class="monitor-strip"></div>
-      <div class="section-head"><div><h2>Stacks e contêineres</h2><p id="inventory-meta">Descobrindo os serviços do servidor…</p></div><span class="legend"><span class="mini-switch"></span>Recuperação automática</span></div>
-      <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><label class="sr-only" for="search">Buscar contêiner ou stack</label><input id="search" type="search" placeholder="Buscar contêiner ou stack…" autocomplete="off"></div><label class="sr-only" for="filter">Filtrar contêineres</label><select id="filter"><option value="all">Todos os contêineres</option><option value="enabled">Com recuperação</option><option value="disabled">Sem recuperação</option><option value="stopped">Parados</option><option value="waiting">Aguardando</option><option value="running">Em execução</option></select></div>
+      <div class="section-head"><div><h2>Aplicativos e stacks</h2><p id="inventory-meta">Descobrindo os serviços do servidor…</p></div><span class="legend"><span class="mini-switch"></span>Recuperação automática</span></div>
+      <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><label class="sr-only" for="search">Buscar aplicativo, stack ou contêiner</label><input id="search" type="search" placeholder="Buscar aplicativo, stack ou contêiner…" autocomplete="off"></div><label class="sr-only" for="filter">Filtrar contêineres</label><select id="filter"><option value="all">Todos os aplicativos</option><option value="enabled">Com recuperação</option><option value="disabled">Sem recuperação</option><option value="stopped">Parados</option><option value="waiting">Aguardando</option><option value="running">Em execução</option></select></div>
       <div id="stack-list" class="stack-list"><div class="skeleton"></div><div class="skeleton"></div></div>
       <p class="note"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-9h.01"/></svg><span>As escolhas são salvas automaticamente. Desativar a recuperação deixa o contêiner no estado atual e apenas impede que este monitor tente iniciá-lo.</span></p>
     </section>
@@ -102,7 +103,8 @@ const icons = {
   lock:'<svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4m-4 4v3"/></svg>'
 };
 let state = null, csrf = '', authenticated = false, setupRequired = false, busy = false, view = 'overview', toastTimer = null, settingsDirty = false, settingsRevision = null;
-const collapsed = new Set(), expandedRows = new Set();
+const collapsed = new Set(), opened = new Set(), expandedRows = new Set(), failedIcons = new Set();
+try{const saved=JSON.parse(localStorage.getItem('autostart.groups')||'{}');for(const key of Array.isArray(saved.closed)?saved.closed:[])if(typeof key==='string')collapsed.add(key);for(const key of Array.isArray(saved.open)?saved.open:[])if(typeof key==='string')opened.add(key);}catch(_){}
 const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm = value => String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const clock = stamp => stamp ? new Date(stamp*1000).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—';
@@ -165,6 +167,23 @@ function toggle(scope,key,checked,disabled,label,mixed=false){
   return '<label class="switch"><input type="checkbox" data-rule="'+scope+'" data-key="'+esc(key)+'" aria-label="'+esc(label)+'" '+(checked?'checked ':'')+(disabled||busy?'disabled ':'')+(mixed?'data-mixed="true" ':'')+'><span class="switch-track"></span></label>';
 }
 
+function picture(source,name,style='app-icon'){
+  const initials=String(name||'?').split(/[\s_.-]+/).filter(Boolean).slice(0,2).map(part=>part[0]).join('').toUpperCase();
+  const safe=typeof source==='string'&&/^(https?:\/\/|data:image\/(png|jpeg|webp);base64,)/i.test(source)&&!failedIcons.has(source);
+  return '<span class="'+style+' app-logo" aria-hidden="true"><span class="logo-initials">'+esc(initials)+'</span>'+(safe?'<img data-app-icon src="'+esc(source)+'" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">':'')+'</span>';
+}
+
+function inventoryGroups(){
+  if(Array.isArray(state.apps))return state.apps;
+  const groups=new Map();
+  for(const record of state.containers){
+    const key=record.stack_key==='standalone'?'container:'+record.key:record.stack_key;
+    if(!groups.has(key))groups.set(key,{id:key,title:record.stack_key==='standalone'?(record.display_name||record.name):record.stack,icon:record.icon||'',scope:record.stack_key==='standalone'?'container':'stack',key:record.stack_key==='standalone'?record.key:record.stack_key,containers:[]});
+    groups.get(key).containers.push(record.id);
+  }
+  return [...groups.values()];
+}
+
 function row(record){
   const diagnostic=record.diagnostic||{}, warning=record.health==='unhealthy'||(record.enabled||record.manual_pending)&&record.state!=='running'&&['waiting_disk','waiting_dependency','error'].includes(diagnostic.stage), expanded=expandedRows.has(record.id);
   const sources={container:'Individual',stack:'Da stack',default:'Do padrão',protected:'Protegido'};
@@ -173,7 +192,7 @@ function row(record){
   const dependencies=(diagnostic.dependencies||[]).map(dependency=>'<span>'+esc(dependency.ready?'Dependência pronta: ':'Aguardando dependência: ')+esc(dependency.name||dependency.service)+' · '+esc(dependency.health||dependency.state)+'</span>').join('');
   const details=expanded?'<div class="row-details"><span>ID: '+esc(record.id.slice(0,12))+'</span>'+(record.service?'<span>Serviço: '+esc(record.service)+'</span>':'')+'<span>Tentativas nesta execução: '+(diagnostic.attempts||0)+'</span><span>Última tentativa: '+clock(diagnostic.last_attempt)+'</span><span>'+esc(record.status)+'</span>'+(diagnostic.oom_killed?'<span>Última execução encerrada por falta de memória (OOM).</span>':'')+(diagnostic.exit_code?'<span>Código da última saída: '+esc(diagnostic.exit_code)+'</span>':'')+(diagnostic.docker_error?'<span>Erro do Docker: '+esc(diagnostic.docker_error)+'</span>':'')+paths+dependencies+'</div>':'';
   const start=!record.blocked&&['created','exited'].includes(record.state)?'<button class="details-button" type="button" data-start="container" data-start-key="'+esc(record.key)+'" '+(busy?'disabled':'')+'>Iniciar</button>':'';
-  return '<div class="container-row"><div class="container-id"><div class="app-icon">'+esc(record.name.slice(0,2).toUpperCase())+'</div><div style="min-width:0"><div class="container-name">'+esc(record.name)+'</div><div class="image" title="'+esc(record.image)+'">'+esc(record.image||'Imagem não informada')+'</div></div></div><div class="container-state"><div class="runtime '+esc(record.state)+'"><span class="dot"></span>'+esc(badge)+'</div><p class="row-reason'+(warning?' warning':'')+'">'+esc(reason(record))+'</p><button class="details-button" type="button" data-detail="'+esc(record.id)+'" aria-expanded="'+expanded+'">'+(expanded?'Ocultar detalhes':'Detalhes')+'</button>'+start+'</div><div class="container-policy"><div class="policy-copy'+(record.enabled?' enabled':'')+'">'+(record.blocked?'Protegido':record.enabled?'Recuperar':'Ignorar')+'<small>'+sources[record.policy_source]+'</small></div>'+toggle('container',record.key,record.enabled,Boolean(record.blocked),'Recuperação de '+record.name)+'</div>'+details+'</div>';
+  return '<div class="container-row"><div class="container-id">'+picture(record.icon,record.display_name||record.name)+'<div style="min-width:0"><div class="container-name">'+esc(record.display_name||record.name)+'</div>'+((record.display_name&&record.display_name!==record.name)?'<div class="technical-name">'+esc(record.name)+'</div>':'')+'<div class="image" title="'+esc(record.image)+'">'+esc(record.image||'Imagem não informada')+'</div></div></div><div class="container-state"><div class="runtime '+esc(record.state)+'"><span class="dot"></span>'+esc(badge)+'</div><p class="row-reason'+(warning?' warning':'')+'">'+esc(reason(record))+'</p><button class="details-button" type="button" data-detail="'+esc(record.id)+'" aria-expanded="'+expanded+'">'+(expanded?'Ocultar detalhes':'Detalhes')+'</button>'+start+'</div><div class="container-policy"><div class="policy-copy'+(record.enabled?' enabled':'')+'">'+(record.blocked?'Protegido':record.enabled?'Recuperar':'Ignorar')+'<small>'+sources[record.policy_source]+'</small></div>'+toggle('container',record.key,record.enabled,Boolean(record.blocked),'Recuperação de '+record.name)+'</div>'+details+'</div>';
 }
 
 function renderStats(){
@@ -181,8 +200,8 @@ function renderStats(){
   const running=records.filter(r=>r.state==='running').length, unhealthy=records.filter(r=>r.health==='unhealthy').length, enabled=records.filter(r=>r.enabled).length, waiting=records.filter(r=>r.enabled&&['created','exited'].includes(r.state)&&['waiting_disk','waiting_dependency'].includes(r.diagnostic.stage)).length;
   const stats=[['Contêineres',records.length,stacks.size+' stacks detectadas',icons.cube,''],['Em execução',running,unhealthy?unhealthy+' com falha de saúde':'Contêineres ativos',icons.play,unhealthy?'warning':'accent'],['Recuperação ativa',enabled,'Selecionados para voltar ao ar',icons.shield,'accent'],['Aguardando',waiting,'Discos ou dependências',icons.disk,waiting?'warning':'']];
   el('stats').innerHTML=stats.map(s=>'<div class="stat '+s[4]+'"><div class="stat-top"><span>'+s[0]+'</span>'+s[3]+'</div><div class="stat-value">'+s[1]+'</div><div class="stat-foot">'+s[2]+'</div></div>').join('');
-  el('nav-count').textContent=records.length;
-  el('inventory-meta').textContent=records.length+' contêineres · '+stacks.size+' stacks · descoberta automática';
+  el('nav-count').textContent=inventoryGroups().length;
+  el('inventory-meta').textContent=inventoryGroups().length+' aplicativos · '+records.length+' contêineres · '+stacks.size+' stacks';
 }
 
 function renderMonitor(){
@@ -193,7 +212,7 @@ function renderMonitor(){
 }
 
 function matches(record,query,filter){
-  if(query&&!norm(record.name+' '+record.stack+' '+record.image+' '+record.service).includes(query))return false;
+  if(query&&!norm(record.name+' '+record.stack+' '+record.image+' '+record.service+' '+(record.display_name||'')+' '+(record.app_name||'')).includes(query))return false;
   if(filter==='enabled')return record.enabled;
   if(filter==='disabled')return !record.enabled;
   if(filter==='stopped')return ['exited','created'].includes(record.state);
@@ -204,16 +223,21 @@ function matches(record,query,filter){
 
 function renderStacks(){
   const query=norm(el('search').value.trim()),filter=el('filter').value;
-  const groups=new Map();for(const record of state.containers){if(!groups.has(record.stack_key))groups.set(record.stack_key,[]);groups.get(record.stack_key).push(record);}
+  const recordsById=new Map(state.containers.map(record=>[record.id,record]));
   let html='';
-  for(const [key,records] of groups){
-    const visible=records.filter(record=>matches(record,query,filter));if(!visible.length)continue;
-    const eligible=records.filter(record=>!record.blocked),enabled=eligible.filter(record=>record.enabled).length,partial=enabled>0&&enabled<eligible.length,closed=collapsed.has(key);
-    const summary=eligible.length?(enabled+' de '+eligible.length+' com recuperação'):'Gerenciamento externo';
+  for(const group of inventoryGroups()){
+    const key=group.id,records=group.containers.map(id=>recordsById.get(id)).filter(Boolean);if(!records.length)continue;
+    const groupMatches=query&&norm(group.title).includes(query);
+    if(!records.some(record=>matches(record,groupMatches?'':query,filter)))continue;
+    const eligible=records.filter(record=>!record.blocked),enabled=eligible.filter(record=>record.enabled).length,partial=enabled>0&&enabled<eligible.length;
+    const closed=!query&&(collapsed.has(key)||!opened.has(key)&&records.length>1);
+    const running=records.filter(record=>record.state==='running').length;
+    const summary=running+'/'+records.length+' ativos · '+(eligible.length?(enabled+' de '+eligible.length+' com recuperação'):'Gerenciamento externo');
     const chevron=icons.chevron.replace('class="chevron"','class="chevron'+(closed?' collapsed':'')+'"');
-    html+='<section class="stack"><header class="stack-head"><div class="stack-left"><button class="fold-button" data-fold="'+esc(key)+'" type="button" aria-expanded="'+(!closed)+'" aria-label="'+esc((closed?'Expandir ':'Recolher ')+records[0].stack)+'">'+chevron+'<span class="stack-icon">'+(key==='standalone'?icons.cube:icons.layers)+'</span><span><span class="stack-title"><strong>'+esc(records[0].stack)+'</strong><span class="count-badge">'+records.length+'</span></span><span class="stack-meta">'+summary+'</span></span></button></div><div class="stack-control"><button class="button" type="button" data-start="stack" data-start-key="'+esc(key)+'" '+(busy||!eligible.some(record=>['created','exited'].includes(record.state))?'disabled':'')+'>Iniciar</button><span>Stack inteira</span>'+toggle('stack',key,enabled>0,eligible.length===0,'Recuperação da stack '+records[0].stack,partial)+'</div></header>'+(closed?'':visible.map(row).join(''))+'</section>';
+    const ordered=[...records].sort((a,b)=>Number(b.id===group.main_container)-Number(a.id===group.main_container)||a.name.localeCompare(b.name,'pt-BR'));
+    html+='<section class="stack" data-app-id="'+esc(key)+'"><header class="stack-head"><div class="stack-left"><button class="fold-button" data-fold="'+esc(key)+'" type="button" aria-expanded="'+(!closed)+'" aria-label="'+esc((closed?'Expandir ':'Recolher ')+group.title)+'">'+chevron+picture(group.icon,group.title,'stack-icon')+'<span><span class="stack-title"><strong>'+esc(group.title)+'</strong><span class="count-badge">'+records.length+'</span></span><span class="stack-meta">'+summary+'</span></span></button></div><div class="stack-control"><button class="button" type="button" data-start="'+group.scope+'" data-start-key="'+esc(group.key)+'" '+(busy||!eligible.some(record=>['created','exited'].includes(record.state))?'disabled':'')+'>Iniciar</button><span>'+(group.scope==='stack'?'Stack inteira':'Aplicativo')+'</span>'+toggle(group.scope,group.key,enabled>0&&enabled===eligible.length,eligible.length===0,'Recuperação '+(group.scope==='stack'?'da stack ':'de ')+group.title,partial)+'</div></header>'+(closed?'':ordered.map(row).join(''))+'</section>';
   }
-  if(!html){html='<div class="empty">'+icons.cube+'<h3>'+(state.last_inventory?'Nenhum contêiner encontrado':'Descobrindo seus contêineres…')+'</h3><p>'+(state.last_inventory?'Ajuste a busca ou o filtro para ver os serviços.':'A lista aparecerá assim que o Docker estiver disponível.')+'</p></div>';}
+  if(!html){html='<div class="empty">'+icons.cube+'<h3>'+(state.last_inventory?'Nenhum aplicativo encontrado':'Descobrindo seus aplicativos…')+'</h3><p>'+(state.last_inventory?'Ajuste a busca ou o filtro para ver os serviços.':'A lista aparecerá assim que o Docker estiver disponível.')+'</p></div>';}
   el('stack-list').innerHTML=html;
   for(const checkbox of el('stack-list').querySelectorAll('[data-mixed]'))checkbox.indeterminate=true;
 }
@@ -253,10 +277,12 @@ async function mutate(path,body,message){
   finally{busy=false;el('save-settings').disabled=false;render();}
 }
 
-function changeView(next){view=next;for(const name of ['overview','activity','settings'])el(name+'-view').hidden=name!==view;for(const button of document.querySelectorAll('[data-view]')){button.classList.toggle('active',button.dataset.view===view);button.setAttribute('aria-current',button.dataset.view===view?'page':'false');}el('breadcrumb').textContent={overview:'Contêineres',activity:'Atividade',settings:'Configurações'}[view];if(view==='settings'&&state)fillSettings();render();}
+function changeView(next){view=next;for(const name of ['overview','activity','settings'])el(name+'-view').hidden=name!==view;for(const button of document.querySelectorAll('[data-view]')){button.classList.toggle('active',button.dataset.view===view);button.setAttribute('aria-current',button.dataset.view===view?'page':'false');}el('breadcrumb').textContent={overview:'Aplicativos',activity:'Atividade',settings:'Configurações'}[view];if(view==='settings'&&state)fillSettings();render();}
 
 function updateCountdown(){if(!state||!el('countdown'))return;const elapsed=(Date.now()-(state.receivedAt||Date.now()))/1000;const remaining=Math.max(0,Math.ceil(state.next_check-state.server_time-elapsed));el('countdown').textContent=state.scanning?'verificação em andamento':remaining>0?'próxima verificação em '+remaining+'s':'próxima verificação em instantes';}
 
+document.addEventListener('load',event=>{if(event.target.matches?.('img[data-app-icon]'))event.target.parentElement.classList.add('image-loaded');},true);
+document.addEventListener('error',event=>{if(event.target.matches?.('img[data-app-icon]')){failedIcons.add(event.target.getAttribute('src'));event.target.remove();}},true);
 el('theme').addEventListener('click',()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
 el('search').addEventListener('input',()=>{if(state)renderStacks();});
 el('filter').addEventListener('change',()=>{if(state)renderStacks();});
@@ -264,7 +290,7 @@ for(const button of document.querySelectorAll('[data-view]'))button.addEventList
 el('logout').addEventListener('click',async()=>{try{await request('/api/logout',{});el('password').value='';await session();}catch(error){toast(error.message,true);}});
 
 document.addEventListener('click',async event=>{
-  const fold=event.target.closest('[data-fold]');if(fold){const key=fold.dataset.fold;collapsed.has(key)?collapsed.delete(key):collapsed.add(key);renderStacks();return;}
+  const fold=event.target.closest('[data-fold]');if(fold){const key=fold.dataset.fold;if(fold.getAttribute('aria-expanded')==='true'){opened.delete(key);collapsed.add(key);}else{collapsed.delete(key);opened.add(key);}try{localStorage.setItem('autostart.groups',JSON.stringify({open:[...opened],closed:[...collapsed]}));}catch(_){}renderStacks();return;}
   const detail=event.target.closest('[data-detail]');if(detail){const id=detail.dataset.detail;expandedRows.has(id)?expandedRows.delete(id):expandedRows.add(id);renderStacks();return;}
   const start=event.target.closest('[data-start]');if(start){await mutate('/api/start',{scope:start.dataset.start,key:start.dataset.startKey},'Partida manual solicitada. Acompanhe o resultado no painel.');return;}
   if(event.target.closest('#pause-monitor')&&state){await mutate('/api/settings',{revision:state.revision,settings:{paused:!state.settings.paused}},state.settings.paused?'Recuperação retomada.':'Recuperação pausada.');}

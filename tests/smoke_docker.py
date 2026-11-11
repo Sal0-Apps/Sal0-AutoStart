@@ -1,6 +1,7 @@
 """Recuperacao automatica e partida manual com Docker real em runner descartavel."""
 import http.cookiejar
 import json
+from pathlib import Path
 import secrets
 import subprocess
 import sys
@@ -39,6 +40,14 @@ def main():
     volume = prefix + "-config"
     containers = [monitor, selected, excluded, server, redis, database, protected, blocked]
     bind_directory = tempfile.TemporaryDirectory(prefix=prefix + "-bind-")
+    metadata_root = Path(bind_directory.name) / 'zima-apps'
+    metadata = metadata_root / prefix
+    metadata.mkdir(parents=True)
+    (metadata / 'docker-compose.yml').write_text(json.dumps({
+        'name': prefix,
+        'services': {service: {'container_name': name, 'environment': {'SECRET': 'private-integration-fixture'}} for service, name in [('selected', selected), ('excluded', excluded), ('protected', protected)]},
+        'x-casaos': {'main': 'selected', 'title': {'custom': 'Serviços do Teste'}, 'icon': 'https://example.org/icon.png'}
+    }))
     opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
     csrf, origin = "", ""
 
@@ -77,7 +86,8 @@ def main():
         docker("volume", "create", volume)
         environment = ["-e", "INITIAL_DELAY_SECONDS=0", "-e", "DISK_STABLE_SECONDS=0",
                        "-e", "ONLY_CONTAINERS=" + selected + "," + blocked, "-e", "IGNORE_CONTAINERS=" + excluded,
-                       "-e", "START_GAP_SECONDS=0", "-e", "CHECK_INTERVAL_SECONDS=15", "-e", "AUTH_REQUIRED=false"]
+                       "-e", "START_GAP_SECONDS=0", "-e", "CHECK_INTERVAL_SECONDS=15", "-e", "AUTH_REQUIRED=false",
+                       "-e", "SAL0_ZIMA_APPS=/zima-test-apps"]
         # Simula uma instalacao anterior com senha no mesmo volume.
         docker("run", "--rm", *environment, "-v", volume + ":/config", "--entrypoint", "python", image, "-c",
                "from app import Store; Store('/config').setup_password('integration-old-password')")
@@ -85,6 +95,7 @@ def main():
                "--cap-drop=ALL", "--cap-add=DAC_READ_SEARCH", "--security-opt=no-new-privileges:true",
                "--tmpfs", "/tmp:rw,noexec,nosuid,nodev,size=8m", *environment,
                "-p", "127.0.0.1::8788", "-v", "/var/run/docker.sock:/var/run/docker.sock",
+               "-v", str(metadata_root) + ":/zima-test-apps:ro",
                "-v", "/:/host:ro,rslave", "-v", "/proc/1/mountinfo:/host-mountinfo:ro", "-v", volume + ":/config", image)
 
         # Nenhuma chamada HTTP, login, /check ou mudanca de preferencia ate
@@ -101,6 +112,10 @@ def main():
         assert session["authenticated"] and not session["setup_required"] and not session["auth_required"]
         csrf = session["csrf"]
         state = request("/api/state")
+        state = wait_for(lambda: (snapshot if any(group['title'] == 'Serviços do Teste' for group in snapshot['apps']) else None)
+                         if (snapshot := request('/api/state')) else None, 'Os nomes do ZimaOS não apareceram no inventário.')
+        assert 'private-integration-fixture' not in json.dumps(state)
+        print('OK: metadados ZimaOS em leitura, nome personalizado e credenciais fora do inventário.', flush=True)
         target = next(r for r in state["containers"] if r["name"] == selected)
         assert target["stack"] == prefix
         wait_for(lambda: next(r for r in request("/api/state")["containers"] if r["name"] == blocked)["diagnostic"].get("stage") == "waiting_disk",

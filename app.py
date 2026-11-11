@@ -1,4 +1,4 @@
-"""Painel local de recuperacao de conteineres. Sem dependencias de terceiros."""
+"""Painel local de recuperacao de conteineres."""
 import collections
 import copy
 import hashlib
@@ -16,8 +16,9 @@ from urllib.parse import urlsplit
 
 import storage_guard as storage
 from storage_probe import ProbePool
+from zima_catalog import AsyncAppCatalog, presentation
 
-VERSION = Path(__file__).with_name("VERSION").read_text().strip() if Path(__file__).with_name("VERSION").is_file() else "2.3.0"
+VERSION = Path(__file__).with_name("VERSION").read_text().strip() if Path(__file__).with_name("VERSION").is_file() else "2.4.0"
 SERVER_NAME = os.getenv("SERVER_NAME", "Servidor Docker").strip()[:80] or "Servidor Docker"
 PORT = int(os.getenv("WEB_PORT", "8788"))
 CONFIG_DIR = Path(os.getenv("CONFIG_DIR", "/config"))
@@ -231,9 +232,12 @@ class Store:
 
 
 class Monitor:
-    def __init__(self, store, docker=None):
+    def __init__(self, store, docker=None, catalog=None):
         self.store = store
         self.docker = docker or storage.Docker()
+        self.catalog = catalog or AsyncAppCatalog(os.getenv("SAL0_ZIMA_APPS", storage.HOST_ROOT + "/var/lib/casaos/apps"))
+        self.apps = []
+        self.catalog_status = {"available": False, "apps": 0}
         self.lock = threading.RLock()
         self.stop = threading.Event()
         self.wake = threading.Event()
@@ -303,9 +307,11 @@ class Monitor:
             record.update({"id": item["Id"], "state": item.get("State", "unknown"), "image": item.get("Image", ""),
                            "status": item.get("Status", ""), "health": health_status(item)})
             records.append(record)
+        apps, catalog_status = presentation(raw, records, self.catalog)
         self.store.seed_legacy(records)
         with self.lock:
             self.records = sorted(records, key=lambda record: (record["stack"].casefold(), record["name"].casefold()))
+            self.apps, self.catalog_status = apps, catalog_status
             self.last_inventory = now()
             self.error = ""
             present = {record["id"] for record in records}
@@ -508,7 +514,7 @@ class Monitor:
                 record["manual_pending"] = record["id"] in self.manual_targets
             return {
                 "version": VERSION, "server_name": SERVER_NAME, "revision": config["revision"], "settings": config["settings"],
-                "containers": records, "events": list(self.events), "error": self.error,
+                "containers": records, "apps": copy.deepcopy(self.apps), "catalog": dict(self.catalog_status), "events": list(self.events), "error": self.error,
                 "last_inventory": self.last_inventory, "last_check": self.last_check,
                 "next_check": self.next_check, "scanning": self.scanning, "server_time": now(),
                 "manual": dict(self.manual_report, pending=len(self.manual_targets)),
@@ -622,8 +628,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
-        self.send_header("Referrer-Policy", "same-origin")
-        self.send_header("Content-Security-Policy", "default-src 'none'; script-src 'nonce-" + (nonce or "unused") + "'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("Content-Security-Policy", "default-src 'none'; script-src 'nonce-" + (nonce or "unused") + "'; style-src 'unsafe-inline'; img-src 'self' data: https: http:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
         if cookie is not None:
             self.send_header("Set-Cookie", "autostart_session=" + cookie + "; Path=/; HttpOnly; SameSite=Strict; Max-Age=" + ("86400" if cookie else "0"))
         self.end_headers()

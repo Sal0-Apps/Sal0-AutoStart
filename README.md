@@ -36,9 +36,19 @@ As regras acompanham projeto/serviço/réplica do Compose, ou o nome de um cont�
 
 Uma partida manual respeita a disponibilidade dos discos e a ordem das dependências, mas dispensa a espera inicial e o tempo de estabilidade. O pedido retenta por até cinco minutos e mostra quantos iniciaram, quantos aguardam e quantos não concluíram. Ele preserva as escolhas de recuperação automática. A partida só é contada como iniciada depois de o Docker confirmar o contêiner em execução; uma aplicação que sai imediatamente mostra o erro/código de saída.
 
+## Nomes, ícones e stacks do ZimaOS
+
+A partir da versão 2.4.0, os cartões mostram o nome personalizado e o ícone configurados no ZimaOS. Stacks com vários serviços começam recolhidas e lembram a expansão neste navegador. A busca aceita o nome do aplicativo, a stack, o serviço, o nome técnico e a imagem; ao encontrar um serviço, abre o grupo com seu contexto. Contêineres avulsos aparecem como aplicativos separados.
+
+A leitura usa `/host/var/lib/casaos/apps`, disponível pela montagem de leitura `/host` já presente no compose. A atualização da imagem funciona com o compose anterior. Para um caminho diferente, a variável opcional `SAL0_ZIMA_APPS` indica a pasta de aplicativos visível dentro do contêiner.
+
+A consulta de metadados roda em segundo plano: uma pasta lenta não bloqueia a recuperação dos contêineres. Só nomes, ícones, serviços e associação dos aplicativos são aproveitados; variáveis e credenciais dos composes não são enviadas ao navegador. Sem metadados, o painel usa os nomes e ícones das etiquetas Docker e, na falta de imagem, as iniciais.
+
+As identidades das regras e os limites das stacks de recuperação continuam baseados no Compose. Renomear um aplicativo no ZimaOS não apaga suas escolhas. Uma associação visual não une projetos Docker diferentes nem amplia o alcance do botão Iniciar ou da chave de recuperação.
+
 ## Reconhecimento de stacks
 
-Stacks Compose, incluindo as criadas pelo Portainer, são agrupadas pelas labels `com.docker.compose.project` e `com.docker.compose.service`. Contêineres sem essas labels aparecem em **Sem stack**. Não é necessário informar credenciais do Portainer.
+Stacks Compose, incluindo as criadas pelo Portainer, são agrupadas pelas labels `com.docker.compose.project` e `com.docker.compose.service`. Contêineres sem essas labels aparecem em cartões individuais. Não é necessário informar credenciais do Portainer.
 
 O monitor lê `com.docker.compose.depends_on`, inicia os serviços selecionados na ordem das dependências e aguarda a condição declarada: `service_started`, `service_healthy` ou `service_completed_successfully`. Assim, uma stack como o Immich pode aguardar PostgreSQL e Redis saudáveis antes de iniciar o servidor. Uma dependência parada e desmarcada permanece parada; o painel explica qual serviço está aguardando. Tarefas de inicialização já concluídas com código zero não são repetidas quando usadas por `service_completed_successfully`.
 
@@ -82,9 +92,10 @@ Se esquecer a senha, siga a recuperação em [`docs/RECUPERAR-SENHA.md`](docs/RE
 
 ## Desenvolver e testar
 
-O aplicativo usa somente a biblioteca padrão do Python, sem pip, CDN, fonte externa ou download durante a partida.
+O motor de recuperação usa a biblioteca padrão do Python. PyYAML é instalado na construção da imagem para interpretar os metadados do ZimaOS. Os ícones configurados podem ser carregados pelo navegador; a partida do monitor funciona sem downloads de dependências.
 
 ```bash
+python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
 docker compose -f docker-compose.yml -f compose.build.yml up -d --build
 ```
