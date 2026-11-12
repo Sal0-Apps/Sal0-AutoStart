@@ -51,6 +51,7 @@ jobs:
             python -m playwright install chromium
           fi
           python tests/browser_smoke.py
+          python tests/appearance_smoke.py
       - id: version
         name: Ler versão
         run: |
