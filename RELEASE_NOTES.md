@@ -1,3 +1,11 @@
+## 2.5.1 — Animações e ícones da referência aprovada
+
+- Restauradas as quatro ondas SVG com a mesma deformação contínua e iluminação do HTML de exemplo.
+- Ícones vetoriais da galeria nos controles e na identidade do app; equalizador, ondas de voz, órbita, salto e radar conforme cada aplicativo.
+- Controle de movimento mostra a preferência efetiva e permite ativação manual mesmo quando o aparelho sugere movimento reduzido.
+- Fundo com altura estável durante a rolagem; gráficos decorativos não recriam o conteúdo nem alteram os dados de tarefas.
+- Modos claro/escuro e Tema antigo preservados. Atualização da interface web, recebida pelos clientes atuais.
+
 ## Aparência Sal0: vidro e movimento contínuo
 
 - Temas Cristal, Aurora e Wall, com modos claro e escuro e transparência ajustável.

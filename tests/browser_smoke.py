@@ -95,7 +95,9 @@ def main():
                 all_button.wait_for()
                 page.get_by_role('button', name='Recolher Fotos da Casa', exact=True).wait_for()
                 assert not page.locator("#auth").is_visible()
-                page.get_by_role('button', name='Alternar tema', exact=True).click()
+                page.get_by_role('button', name='Escolher tema visual', exact=True).click()
+                page.locator('[data-sal0-mode-choice=light]').click()
+                page.locator('[data-sal0-close]').click()
                 page.screenshot(path=str(output / 'mobile-theme.png'), full_page=True)
                 assert not errors, errors
                 browser.close()

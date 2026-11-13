@@ -1,22 +1,23 @@
 # Aparência Sal0
 
-O botão **Temas**, ao lado do alternador claro/escuro, oferece Cristal,
-Aurora, Wall e **Tema antigo**. Esta última opção usa os estilos originais
-do próprio aplicativo nos dois modos de cor. A escolha fica neste navegador.
+O único botão **Temas** reúne Cristal, Aurora, Wall, **Tema antigo**, claro/escuro,
+transparência e movimento. As escolhas ficam neste navegador.
 
-Os temas novos usam cartões translúcidos e ondas azuis contínuas. O fundo usa
-a maior altura estável da janela; a rolagem e a barra do navegador não
-redimensionam as ondas nem reiniciam a animação. Navegadores antigos medem
-o tamanho novamente somente após uma mudança real de largura/orientação.
+O fundo usa as quatro formas SVG e os mesmos ciclos de deformação e iluminação
+do HTML de referência enviado. Sua altura é estável durante a rolagem. O SVG
+é montado uma única vez; consultas de dados não reiniciam a animação nem recriam
+o conteúdo da página. Abas ocultas, movimento desativado e Tema antigo pausam o fundo.
 
-O controle de movimento, a preferência de movimento reduzido do aparelho,
-o tema antigo e uma aba oculta pausam as ondas. Não há eventos de rolagem
-ou acesso aos serviços do aplicativo no código de aparência.
+A preferência de movimento reduzido do aparelho é seguida por padrão e aparece
+no estado do controle. Marcar **Animações suaves** manualmente ativa o movimento,
+inclusive quando o aparelho sugere reduzi-lo. A escolha manual fica salva.
 
-O modo claro solicita `color-scheme: only light`; o escuro declara `dark`.
-A metatag `darkreader-lock` solicita a preservação dos temas no Dark Reader.
-Os clientes Android também desativam Force Dark e escurecimento algorítmico
-no WebView. Filtros externos que ignorem essas opções podem interferir.
+Os 35 ícones vetoriais da referência são usados nos controles e marcas dos apps.
+Equalizador, ondas de voz, órbita de recuperação, salto e radar identificam cada
+aplicativo. São elementos decorativos, sem progresso ou informações simuladas.
+Ícones de containers, avatares e conteúdo do usuário continuam vindo dos dados reais.
+Tema antigo restaura as marcas e glifos anteriores.
 
-Os controles, APIs, filas, autenticação e processamento continuam usando
-a implementação existente do aplicativo.
+Esta atualização é da interface web. Não altera clientes Android, conexões,
+autenticação, APIs, filas, modelos ou processamento. Os modos claro/escuro próprios
+e as declarações de esquema de cores continuam disponíveis.
