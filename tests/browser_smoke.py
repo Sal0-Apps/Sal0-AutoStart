@@ -78,7 +78,12 @@ def main():
                 page.screenshot(path=str(output / "desktop.png"), full_page=True)
                 for width in (390,360):
                     page.set_viewport_size({"width": width, "height": 844})
-                    assert not page.evaluate('document.documentElement.scrollWidth > innerWidth'), 'Rolagem horizontal no celular'
+                    # A rotating decoration must stay inside its cell at every angle.
+                    orbit=page.locator('.sal0-app-art .sal0-power-orbit')
+                    for phase in (0,2250,6750):
+                        orbit.evaluate('(el,phase)=>{for(const animation of el.getAnimations()){animation.pause();animation.currentTime=phase;}}',phase)
+                        assert page.evaluate('document.documentElement.scrollWidth <= document.documentElement.clientWidth'), 'Rolagem horizontal no celular durante a órbita'
+                    orbit.evaluate('el=>el.getAnimations().forEach(animation=>animation.play())')
                 page.screenshot(path=str(output / "mobile.png"), full_page=True)
                 assert not page.evaluate("document.documentElement.scrollWidth > innerWidth"), "Rolagem horizontal no celular"
                 all_button.click()
