@@ -1,6 +1,6 @@
 FROM python:3.13-alpine
 
-ARG VERSION=2.5.1
+ARG VERSION=2.5.2
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.title="Sal0 AutoStart" \
       org.opencontainers.image.description="Recuperacao automatica de conteineres com painel local para Docker e ZimaOS" \
