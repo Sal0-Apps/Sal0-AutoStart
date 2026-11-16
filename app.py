@@ -18,7 +18,7 @@ import storage_guard as storage
 from storage_probe import ProbePool
 from zima_catalog import AsyncAppCatalog, presentation
 
-VERSION = Path(__file__).with_name("VERSION").read_text().strip() if Path(__file__).with_name("VERSION").is_file() else "2.5.2"
+VERSION = Path(__file__).with_name("VERSION").read_text().strip() if Path(__file__).with_name("VERSION").is_file() else "2.5.3"
 SERVER_NAME = os.getenv("SERVER_NAME", "Servidor Docker").strip()[:80] or "Servidor Docker"
 PORT = int(os.getenv("WEB_PORT", "8788"))
 CONFIG_DIR = Path(os.getenv("CONFIG_DIR", "/config"))
@@ -536,18 +536,18 @@ class Monitor:
             try:
                 if time.monotonic() >= next_inventory:
                     self.discover()
-                    next_inventory = time.monotonic() + 5
+                    next_inventory = time.monotonic() + max(.1, min(30, self.store.snapshot()["settings"]["interval"]))
                 if time.monotonic() >= self.deadline:
                     self.scan()
                     self.discover()
-                    next_inventory = time.monotonic() + 5
+                    next_inventory = time.monotonic() + max(.1, min(30, self.store.snapshot()["settings"]["interval"]))
             except Exception as error:
                 with self.lock:
                     self.error = str(error)
                     self.deadline = time.monotonic() + 3
                 next_inventory = time.monotonic() + 3
                 self.event("Aguardando Docker: " + str(error), "error", key="daemon")
-            self.wake.wait(.5)
+            self.wake.wait(max(.05, min(next_inventory, self.deadline) - time.monotonic()))
 
 
 class Sessions:

@@ -1,3 +1,9 @@
+## 2.5.3 — Menor consumo em repouso
+
+- O monitor dorme até a próxima descoberta ou recuperação programada em vez de acordar duas vezes por segundo.
+- A descoberta acompanha o intervalo configurado, com limite de 30 segundos; pedidos manuais acordam imediatamente.
+- Mantém a recuperação de discos, dependências e contêineres após interrupções.
+
 ## 2.5.2 — Componentes completos da referência visual
 
 - Corrige alinhamento de ícones, textos e ilustrações em telas estreitas.
