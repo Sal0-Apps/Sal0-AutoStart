@@ -17,3 +17,12 @@ class IdleScheduleTests(unittest.TestCase):
                     try:monitor.run()
                     finally:monitor.probes.close()
                 self.assertEqual(observed,[expected]);monitor.discover.assert_called_once();monitor.scan.assert_not_called()
+
+    def test_shutdown_during_wakeup_reset_exits_without_an_extra_scan(self):
+        with tempfile.TemporaryDirectory() as folder,patch('app.storage.log'):
+            monitor=app.Monitor(app.Store(folder),docker=Mock(),catalog=Mock())
+            monitor.wake.clear=monitor.stop.set
+            monitor.wake.wait=Mock();monitor.discover=Mock()
+            try:monitor.run()
+            finally:monitor.probes.close()
+            monitor.wake.wait.assert_not_called();monitor.discover.assert_not_called()

@@ -1,3 +1,8 @@
+## 2.5.4 — Encerramento imediato em repouso
+
+- Evita perder o sinal de encerramento durante a troca para a espera adaptativa.
+- Mantém a economia de CPU e a recuperação automática da versão 2.5.3.
+
 ## 2.5.3 — Menor consumo em repouso
 
 - O monitor dorme até a próxima descoberta ou recuperação programada em vez de acordar duas vezes por segundo.

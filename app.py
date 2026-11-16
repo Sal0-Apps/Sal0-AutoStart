@@ -530,6 +530,8 @@ class Monitor:
             self.heartbeat = now()
             requested = self.wake.is_set()
             self.wake.clear()
+            if self.stop.is_set():
+                break
             if requested:
                 next_inventory = 0
                 self.deadline = time.monotonic()
